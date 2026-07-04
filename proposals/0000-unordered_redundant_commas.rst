@@ -1,4 +1,4 @@
-Extra commas in UnOrdered Structures
+Extra NonTuple Commas
 =========================================
 
 .. author:: Viktor WW
@@ -11,12 +11,12 @@ Extra commas in UnOrdered Structures
 .. contents::
 
 This proposal suggests extending the Haskell syntax to support trailing and leading commas 
-in unordered structures (records, import and export lists and sublists, derivation and default clauses,
-fixity, guards and fundeps declaration).
+in most structures (lists, records, import and export lists and sublists, derivation and default clauses,
+fixity, guards and fundeps declaration) except tuple-like structures.
 
 This change aims to improve code readability and maintainability by allowing more flexibility 
-in formatting all unordered structures (records, import and export lists and sublists, 
-derivation and default clauses, fixity, guards and fundeps declaration). 
+in formatting all structures (lists, records, import and export lists and sublists, 
+derivation and default clauses, fixity, guards and fundeps declaration) but not in tuple-like.
 
 This is particularly helpful in scenarios involving version control, code reviews, and automated code generation.
 
@@ -71,38 +71,25 @@ This feature provides several benefits:
 5. **Simplicity of conditional meta-programming**: Extra commas allow to write much simpler code when conditional meta-programming is used.
 
 
-History
-~~~~~~~~~~~~
-
-Adding trailing commas (and more rarely leading commas) is a frequently asked for feature to add to Haskell.
-
-But, this task is highly divisive in the Haskell community.
-
-The original proposal #87 
-`ExtraCommas (was: Trailing and leading commas in sub-export lists) <https://github.com/ghc-proposals/ghc-proposals/pull/87>`__ 
-was discussed several years. The discussion was so controversial
-that the author withdrew the proposal just before the final acceptance (with minor changes).
-
-However, the tension in the Haskell community was so high that a new attempt of that proposal has not been proposed in the following 6 years.
-
-This proposal is an attempt to allow extra commas where everyone agrees to have them - 
-in all unordered structures (records, import and export "lists" and sublists, derivation and default clauses, multi-name signatures).
-
-
 Proposed Change Specification
 -----------------------------
 
-This proposal does not cover structures in which order matters (including lists, tuples, constraint tuples).
-
 This proposal introduces the following syntactical changes to Haskell:
 
-1. **New extension**: Add a new language extension ``UnorderedExtraCommas`` which allows leading and trailing commas in unordered structures.
+1. **New extension**: Add a new language extension ``ExtraNonTupleCommas`` which allows leading and trailing commas in code.
 
-2. **Trailing Commas**: Allow a comma after the last element in enumeration clauses where order does not matter:
+     Extra commas (leading and trailing ones) are allowed everywhere where repetion with a comma is allowed
+     , except as part of constructs 
+     which are delimited by round brackets in terms or types (or constraints).
+
+   This means that this proposal does not cover tuple-like structures (including tuples, constraint tuples and s-context).
+
+2. **Trailing Commas**: Allow a comma after the last element in enumeration clauses in next structures:
 
    - module export lists(already supported) and sub-lists
    - module import lists(already supported) and sub-lists
    - deriving and default clauses
+   - list-comprehensions and fully expanded lists
    - record-like occurrences in terms and types (declarations, patterns, constructions)
    - multi-name signatures (including nested in records)
    - fixity, guards and fundeps declaration
@@ -135,11 +122,12 @@ This proposal introduces the following syntactical changes to Haskell:
        class C a b | a -> b, b -> a,  where ....
 
 	  
-3. **Leading Commas**: Allow a comma before the first element in enumeration clauses where order does not matter:
+3. **Leading Commas**: Allow a comma before the first element in enumeration clauses in next structures:
 
    - module export lists and sub-lists
    - module import lists and sub-lists
    - deriving and default clauses
+   - list-comprehensions and fully expanded lists
    - record-like occurrences in terms and types (declarations, patterns, constructions)
    - multi-name signatures (including nested in records)
    - fixity, guards and fundeps declaration
@@ -157,6 +145,14 @@ This proposal introduces the following syntactical changes to Haskell:
 		  , mkFoo
 		  ) where 
 
+      lst :: [Int]
+      lst = [ 
+              1, 
+              2, 
+              3, 
+              4,
+            ]
+
 4. **Trailing AND Leading Commas**: Allow both trailing (2) **and** leading (3) commas simultaneously in a single structure. ::
 
       data Example a = ....
@@ -169,11 +165,14 @@ This proposal introduces the following syntactical changes to Haskell:
 
       ,f, g, h, :: Int -> Int
 
+      lst :: [Int]
+      lst = [ ,1, 2, 3, 4, 5, 6, 7, 8, ]
+
 
 Syntax
 ~~~~~~~~~~~~
 
-The formal grammar changes for ``UnorderedExtraCommas`` for trailing **and** leading commas **without** repetitive commas:
+The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** leading commas **without** repetitive commas:
 
 .. code:: abnf
 
@@ -212,8 +211,18 @@ The formal grammar changes for ``UnorderedExtraCommas`` for trailing **and** lea
 
     aexp ::= qvar                                                      (variable)
         | ……
+        | [ [,] exp1 , … , expk [,] ]                               (list, k ≥ 1)   ;-- upd
+        | [ exp | [,] qual1 , … , qualn [,] ]         (list comprehension, n ≥ 1)   ;-- upd
+        | ……
         | qcon { [,] fbind1 , … , fbindn [,] }      (labeled construction, n ≥ 0)   ;-- upd
         | aexp_(qcon) { [,] fbind1 , … , fbindn [,] }   (labeled update, n  ≥  1)   ;-- upd
+
+    apat ::= var [ @ apat]	                                         (as pattern)
+        | ……
+        | [ [,] pat1 , … , patk [,] ]                       (list pattern, k ≥ 1)   ;-- upd
+        | ……
+        | qcon { [,] fpat1 , … , fpatk [,] }             (labeled pattern, k ≥ 0)   ;-- upd
+
 
     gendecl ::= vars :: [context =>] type       (type signature)
         | fixity [integer] ops	            (fixity declaration)
@@ -238,14 +247,15 @@ These changes allow extra commas in the all unordered structures:
 - module import sub-"lists"
 - deriving clauses
 - default clauses
+- list-comprehensions and fully expanded lists (expressions and patterns)
 - record-like occurrences in terms and types (declarations, patterns, constructions)
 - multi-name signatures (including nested in records)
 - fixity "lists"
 - fundeps clauses
 - guard clauses
 
-This proposal does not cover structures in which the order of the elements matters, 
-such as lists, tuples, and constraint tuples.
+This proposal does not cover tuple-like structures, 
+such as tuples, constraint tuples and s-context.
 
 Pragmas
 ~~~~~~~~~~~~
@@ -351,7 +361,7 @@ This proposal purposefully dodges interacting with ``TupleSections`` extension.
 Costs and Drawbacks
 -------------------
 
-We expect the implementation and maintenance costs of ``UnorderedExtraCommas`` to have medium difficulty.
+We expect the implementation and maintenance costs of ``ExtraNonTupleCommas`` to have medium difficulty.
 
 Second, all tooling which parses Haskell code will need to be updated to be compatible with the extended syntax.
 
@@ -370,11 +380,30 @@ Alternatives
 
 The primary alternative is the "status quo".
 
+History
+~~~~~~~~~~~~
+
+Adding trailing commas (and more rarely leading commas) is a frequently asked for feature to add to Haskell.
+
+But, this task is highly divisive in the Haskell community.
+
+The original proposal #87 
+`ExtraCommas (was: Trailing and leading commas in sub-export lists) <https://github.com/ghc-proposals/ghc-proposals/pull/87>`__ 
+was discussed several years. The discussion was so controversial
+that the author withdrew the proposal just before the final acceptance (with minor changes).
+
+However, the tension in the Haskell community was so high that a new attempt of that proposal has not been proposed in the following 6 years.
+
+This proposal is an attempt to allow extra commas where everyone agrees to have them - 
+in all unordered structures (records, import and export "lists" and sublists, derivation and default clauses, multi-name signatures).
+
 Alternative adding extra commas
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. The main non-controversial alternative of **Unordered** Extra Commas is **NonData** Extra Commas (allowing extra commas in non-data structures), 
-   which is in the same places as "Unordered" without records.
+1. The main non-controversial alternative of **NonTuple** Extra Commas is **Unordered** Extra Commas (allowing extra commas in ordered structures)
+   and **NonData** Extra Commas (allowing extra commas in non-data structures), which is in the same places as "Unordered" without records.
+  
+   Other alternatives includes **Im(Ex)port** Extra Commas and **Everywhere** Extra Commas.
 
    The author didn't see anyone against extra commas in records.
 
