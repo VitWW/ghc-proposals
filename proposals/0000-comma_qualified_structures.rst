@@ -1,5 +1,5 @@
-Redundant commas in Comma Qualified lists and tuples
-======================================================
+Extra Data Commas
+=====================
 
 .. author:: Viktor WW
 .. date-accepted::
@@ -10,9 +10,11 @@ Redundant commas in Comma Qualified lists and tuples
 .. sectnum::
 .. contents::
 
-This proposal suggests extending the Haskell syntax by adding alternative syntax for lists, tuples and constraint tuples with build support of trailing and leading commas.
+This proposal suggests extending the Haskell syntax by adding alternative syntax 
+for lists, records, tuples and constraint tuples with build support of trailing and leading commas.
 
-This change aims to improve code readability and maintainability by allowing more flexibility in formatting lists, tuples and constraint tuples. 
+This change aims to improve code readability and maintainability by allowing more flexibility 
+in formatting lists, records, tuples and constraint tuples. 
 
 First of all, particularly important in scenarios involving version control, code reviews, and automated code generation.
 
@@ -77,45 +79,46 @@ Proposed Change Specification
 
 Main idea is: 
 
-1. To forbid redundant commas for existing order-matter structures (lists and tuples, list comprehensions, constraint tuples)
+1. To forbid redundant commas for existing data structures (records, lists and tuples, list comprehensions, constraint tuples)
 
-2. To create an alternating/qualified syntax for order-matter structures (lists, tuples, and constraint tuples) that has built support
+2. To create an alternating syntax for data structures (records, lists, tuples, and constraint tuples) that has built support
    for trailing and leading commas.
 
 This proposal introduces the following syntactical changes to Haskell:
 
-1. Add language extension ``CommaQualifiedStructures``
+1. Add language extension ``ExtraDataCommas``
 
-2. **Comma Qualified tuples**: Allow to write ``qualified`` keyword after tuple close bracket `)` in tuples, 
+2. **Comma Qualified tuples**: Allow to write ``data`` keyword after tuple close bracket `)` in tuples, 
    unboxed-tuples and constraint tuples at terms and types.
 
    The only difference between qualified and non-qualified lists is:
 
-   - non-qualified tuples don't allow redundant commas, but allow ``TupletSections`` (or presumably allow for constraint tuples)
-   - qualified tuples allow redundant commas, but ignore ``TupletSections``
+   - non-qualified tuples don't allow extra commas, but allow ``TupletSections`` (or presumably allow for constraint tuples)
+   - qualified tuples allow extra commas, but ignore ``TupletSections``
      ::
   
        myTuple1 :: (Int, String, Char)
-       myTuple1 = (1, "2abc", 'd') qualified
+       myTuple1 = (1, "2abc", 'd') data
 
-       unlftTuple1 = (# 1#, 'x'#, 3.2## #) qualified
+       myTuple2 :: (Int, Int, String, Char) data
+       myTuple2 = (42, 43, "xyz", 'w') data
 
-3. **Comma Qualified solo-tuples**: Allow to write solo-tuples with ``qualified`` keyword ::
+       unlftTuple1 = (# 1#, 'x'#, 3.2## #) data
 
-       mySoloTuple :: (Int) qualified
-       mySoloTuple  = (5) qualified
+3. **Comma Qualified solo-tuples**: Allow to write solo-tuples with ``data`` keyword ::
 
-4. **Comma Qualified lists**: Allow to write ``qualified`` keyword after list close bracket `]` in lists at terms and types.
+       mySoloTuple :: (Int) data
+       mySoloTuple  = (5) data
+
+4. **Comma Qualified lists**: Allow to write ``data`` keyword after list close bracket `]` in lists at terms and types.
    The only difference between qualified and non-qualified lists is:
    
-   - non-qualified lists don't allow redundant commas, but allow presumably/conceivable ``ListSections`` extension
-   - qualified lists allow redundant commas, but ignore presumably/conceivable ``ListSections`` extension
+   - non-qualified lists don't allow extra commas, but allow presumably/conceivable ``ListSections`` extension
+   - qualified lists allow exra commas, but ignore presumably/conceivable ``ListSections`` extension
 
    ::
      
-      myList1 = [1, 2, 3, 4, 5, 6, 7, 8] qualified
-
-5. **Qualified Trailing Commas**: Allow a comma after the last element in qualified lists (expanded, non-enumerations) and tuples/constraint tuples. ::
+      myList1 = [1, 2, 3, 4, 5, 6, 7, 8] data
 
       myList2 :: [Int]
       myList2 = [
@@ -127,30 +130,27 @@ This proposal introduces the following syntactical changes to Haskell:
                     6, 
                     7, 
                     8,
-                ] qualified
+                ] data
 
-      instance (GSerialize a, GSerialize b,) qualified => GSerialize (a :+: b) where
+      instance (GSerialize a, GSerialize b,) data => GSerialize (a :+: b) where
 
       myfun1 :: forall a s. (
                     C1 a,
                     C2 a s,
                     C3 s,
-                ) qualified. =>
+                ) data. =>
                      (# 
                        SuperLongType a,
                        SuperPuperLongType a s,
                        MegaPuperLongType (Maybe a),
-                     #) qualified
+                     #) data
                      -> Int#
                      -> Int#
                      -> Int#
       myfun1 = ....
-      
 
-6. **Qualified Leading Commas**: Allow a comma after the last element in qualified lists (expanded, non-enumerations) and tuples/constraint tuples. ::
-
-      myTuple2 :: (,Int, String, Char,) qualified
-      myTuple2 = (,1, "2abc", 'd') qualified
+      myTuple3 :: (,Int, String, Char,) data
+      myTuple3 = (,1, "2abc", 'd') data
 
       myList3 :: [Int]
       myList3 = [
@@ -162,34 +162,51 @@ This proposal introduces the following syntactical changes to Haskell:
                     , 6 
                     , 7 
                     , 8
-                ] qualified
+                ] data
       
+5. **Qualified trailing & leading commas**: 
+
+   - Allow a comma before the first element in qualified 
+     records, lists (expanded, non-enumerations) and tuples/constraint tuples/s-context.
+
+   - Allow a comma after the last element in qualified 
+     records, lists (expanded, non-enumerations) and tuples/constraint tuples/s-context.
+
+   - Allow both trailing & leading commas in  same qualified structure
+
 
 Syntax
 ~~~~~~~~~~~~
 	  
-The formal grammar changes for ``CommaQualifiedStructures``:
+The formal grammar changes for ``ExtraDataCommas``:
 
-:: 
+.. code:: abnf
 
     atype := gtycon
-        |    tyvar
-        |    ( ,? type1 , ... , typek ,? ) qualified    (tuple type, k>=1)    -- new
-        |    ( type1 , ... , typek )                    (tuple type, k>=2)
-        |    (# ,? type1 , ... , typek ,? #) qualified  (tuple type, k>=1)    -- new
-        |    (# type1 , ... , typek #)                  (tuple type, k>=2)
-        |    '[' [,] type1 , ... , typek [,] ']' qualified   (type, k>=1)     -- new
-        |    '[' type ']'	                                 (list type)
-        | ......
+        | tyvar
+        | ( [,] type1 , … , typek [,] ) [data]       (tuple type, k>=1)    --; upd
+        | (# [,] type1 , … , typek [,] #) [data]     (tuple type, k>=1)    --; upd
+        | '[' [,] type1 , … , typek [,] ']' [data]         (type, k>=1)    --; upd
+        | '[' type ']'	                                    (list type)
+        | qcon { [,] fbind1 , … , fbindn [,] } [data]         (labeled construction, n ≥ 0)   ;-- upd
+        | aexp_(qcon) { [,] fbind1 , … , fbindn [,] } [data]  (labeled update, n  ≥  1)       ;-- upd
+        | ……
 
     gtycon := qtycon
-        |    () qualified     --(unit type)            -- new
-        |    ()               --(unit type)
-        |    (##) qualified   --(unlifted unit type)   -- new
-        |    (##)             --(unlifted unit type)
-        |    [] qualified     --(list constructor)     -- new
-        |    []               --(list constructor)
-        | ......
+        | () [data]        (unit type)            --; upd
+        | (##) [data]      (unlifted unit type)   --; upd
+        | '[]' [data]      (list constructor)     --; upd
+        | ……
+
+    constr ::= con [!] atype1 … [!] atypek                  (arity con = k, k>=0)
+        | con { [,] fielddecl1 , … , fielddecln [,] } [data]       (records n>=0)   ;-- upd
+        | ……
+
+    apat ::= var [ @ apat]	                                         (as pattern)
+        | ……
+        | '[' [,] pat1 , … , patk [,] ']' [data]            (list pattern, k ≥ 1)   ;-- upd
+        | ……
+        | qcon { [,] fpat1 , … , fpatk [,] } [data]      (labeled pattern, k ≥ 0)   ;-- upd
 
 
 Proposed Library Change Specification
@@ -210,7 +227,7 @@ Examples
         1,
         2,
         3,
-      ] qualified
+      ] data
 
    This would be equivalent to:
 
@@ -226,7 +243,7 @@ Examples
         , "apple"
         , "banana"
         , "cherry"
-      ] qualified
+      ] data
       
    This would be equivalent to: ::
 
@@ -239,11 +256,12 @@ Examples
       mixed = [
         , 1, 2
         , 3, 4, -- 5
-      ] qualified
+      ] data
       
    This would be equivalent to:  ::
 
       mixed = [1, 2, 3, 4]
+
 
 Effect and Interactions
 -----------------------
@@ -252,34 +270,34 @@ We choose the **postfix variant** ``[x,y,z] qualified`` over **prefix variant** 
 for ``BangPatterns``, ``AsPattern``, ``StrictPattern``,  ``Irrefutable Patterns``, ``Specified(Qualified)Literals`` ::
 
     -- Bang Patterns
-    let !(,p,q,) qualified = e in body
+    let !(,p,q,) data = e in body
     
-    let (!x, ![y,] qualified) = e in body
+    let (!x, ![y,] data) = e in body
 
     -- As Pattern
     foo1 :: (a, b) -> a
-    foo1 t@(,p,q,) qualified = t
+    foo1 t@(,p,q,) data = t
 
     -- Specified(Qualified) Literals
-    bar2 a b  = M.[a, b,] qualified
+    bar2 a b  = M.[a, b,] data
     
     -- StrictPattern
-    data T = MkT ~(Int, Int, Int,) qualified
+    data T = MkT ~(Int, Int, Int,) data
     
     -- Irrefutable Patterns
-    let ~[a,b,] qualified = expr in e0 a b
+    let ~[a,b,] data = expr in e0 a b
 
 Tuple Section
 ~~~~~~~~~~~~~~~~~~
 
 Both ``TupleSection`` extension and presumable/conceivable ``ListSection`` extension
-are fully consistent and compatible with ``CommaQualifiedStructures``.
+are fully consistent and compatible with ``ExtraDataCommas``.
 
 
 Costs and Drawbacks
 -------------------
 
-We expect the implementation and maintenance costs of ``CommaQualifiedStructures`` has medium difficulty.
+We expect the implementation and maintenance costs of ``ExtraDataCommas`` has medium difficulty.
 
 
 Backward Compatibility
@@ -298,8 +316,8 @@ The primary alternative is "status quo".
 Alternative Syntax
 ~~~~~~~~~~~~~~~~~~
 
-Alternative to ``(x, y, z) qualified`` and ``[x, y, z] qualified`` syntax we could choose alternative syntax,
-like ``q(x, y, z)`` and ``q[x, y, z]`` or ``%(x, y, z)`` and ``%[x, y, z]``.
+Alternative to ``(x, y, z) data`` and ``[x, y, z] data`` syntax we could choose alternative syntax,
+like ``q(x, y, z)`` and ``q[x, y, z]`` or ``%(x, y, z)`` and ``%[x, y, z]``. Or alternative keywords could be chosen, like ``qualified``.
 
 
 Unresolved Questions
