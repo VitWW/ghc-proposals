@@ -11,12 +11,11 @@ Extra NonTuple Commas
 .. contents::
 
 This proposal suggests extending the Haskell syntax to support trailing and leading commas 
-in most structures (lists, records, import and export lists and sublists, derivation and default clauses,
+in most structures (pragmas, lists, records, import and export lists and sublists, derivation and default clauses,
 fixity, guards and fundeps declaration) except tuple-like structures.
 
 This change aims to improve code readability and maintainability by allowing more flexibility 
-in formatting all structures (lists, records, import and export lists and sublists, 
-derivation and default clauses, fixity, guards and fundeps declaration) but not in tuple-like.
+in formatting all structures but not in tuple-like.
 
 This is particularly helpful in scenarios involving version control, code reviews, and automated code generation.
 
@@ -84,15 +83,10 @@ This proposal introduces the following syntactical changes to Haskell:
 
    This means that this proposal does not cover tuple-like structures (including tuples, constraint tuples and s-context).
 
-2. **Trailing Commas**: Allow a comma after the last element in enumeration clauses in next structures:
+2. **Trailing Commas**: Allow a comma after the last element in enumeration clauses in structures
 
-   - module export lists(already supported) and sub-lists
-   - module import lists(already supported) and sub-lists
-   - deriving and default clauses
-   - list-comprehensions and fully expanded lists
-   - record-like occurrences in terms and types (declarations, patterns, constructions)
-   - multi-name signatures (including nested in records)
-   - fixity, guards and fundeps declaration
+   - Trailing Commas in module export lists are already supported, but not in sub-lists
+   - Trailing Commas in module import lists are already supported, but not in sub-lists
 
    ::
    
@@ -122,15 +116,7 @@ This proposal introduces the following syntactical changes to Haskell:
        class C a b | a -> b, b -> a,  where ....
 
 	  
-3. **Leading Commas**: Allow a comma before the first element in enumeration clauses in next structures:
-
-   - module export lists and sub-lists
-   - module import lists and sub-lists
-   - deriving and default clauses
-   - list-comprehensions and fully expanded lists
-   - record-like occurrences in terms and types (declarations, patterns, constructions)
-   - multi-name signatures (including nested in records)
-   - fixity, guards and fundeps declaration
+3. **Leading Commas**: Allow a comma before the first element in enumeration clauses in structures
 
    ::
    
@@ -176,31 +162,41 @@ The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** lead
 
 .. code:: abnf
 
-    exports ::= ( [,] export1 , … , exportn [,] )                         ;-- upd
+    ;-- export and import "lists" and sub-"lists"
+
+    exports ::= ( [,] export1 , … , exportn [,] )                    ;-- upd
 
     export  ::= qvar
-        | qtycon[(..)| ( [,] cname_1, … , cname_n [,] ) ]  (n >= 0)       ;-- upd
-        | qtycls[(..)| ( [,] var_1, … , var_n [,] ) ]      (n >= 0)       ;-- upd
+        | qtycon[(..)| ( [,] cname_1, … , cname_n [,] ) ]  (n >= 0)  ;-- upd
+        | qtycls[(..)| ( [,] var_1, … , var_n [,] ) ]      (n >= 0)  ;-- upd
         | module modid
         | ……
    
-    impspec ::= ( [,] import1 , … , importn [,] )          (n ≥ 0)        ;-- upd
-        | hiding ( [,] import1 , … , importn [,] )         (n ≥ 0)        ;-- upd
+    impspec ::= ( [,] import1 , … , importn [,] )          (n ≥ 0)   ;-- upd
+        | hiding ( [,] import1 , … , importn [,] )         (n ≥ 0)   ;-- upd
 
     import  ::= qvar
-        | qtycon[(..)| ( [,] cname_1, … , cname_n [,] ) ]  (n >= 0)       ;-- upd
-        | qtycls[(..)| ( [,] var_1, … , var_n [,] ) ]      (n >= 0)       ;-- upd
+        | qtycon[(..)| ( [,] cname_1, … , cname_n [,] ) ]  (n >= 0)  ;-- upd
+        | qtycls[(..)| ( [,] var_1, … , var_n [,] ) ]      (n >= 0)  ;-- upd
         | ……
+
+    ;-- deriving clauses
 
     deriving ::= deriving dclass
             | deriving (  
-                 ( [,] dclass1 , … , dclassn [,] )                        ;-- upd
+                 ( [,] dclass1 , … , dclassn [,] )                   ;-- upd
               )
 
+    ;-- default clauses
+
     topdecl  ::= type simpletype = type
-        | default ( [,] type1 , … , typen [,] )                           ;-- upd
+        | default ( [,] type1 , … , typen [,] )                      ;-- upd
         | class [scontext =>] tycls tyvar [fundep] [where cdecls]
         | ……
+
+.. code:: abnf
+
+    ;-- records and lists: expression, patterns, declaration
 
     constr ::= con [!] atype1 … [!] atypek                  (arity con = k, k>=0)
         | (btype | ! atype) conop (btype | ! atype)                 (infix conop)
@@ -223,21 +219,43 @@ The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** lead
         | ……
         | qcon { [,] fpat1 , … , fpatk [,] }             (labeled pattern, k ≥ 0)   ;-- upd
 
+.. code:: abnf
+
+    ;-- fixity "lists", multi-name signatures
 
     gendecl ::= vars :: [context =>] type       (type signature)
         | fixity [integer] ops	            (fixity declaration)
         |                                    (empty declaration)
 
-    vars ::= [,] var1 , … , varn [,]         (n ≥ 1)            ;-- upd
+    vars ::= [,] var1 , … , varn [,]           (n ≥ 1)   ;-- upd
 
-    ops  ::= [,] op1 , … , opn [,]           (n ≥ 1)            ;-- upd
+    ops  ::= [,] op1 , … , opn [,]             (n ≥ 1)   ;-- upd
 
-    fundep ::= | [,] fdp1 , … , fdpn [,]     (n ≥ 1)            ;-- upd
+    ;-- fundeps clauses & guard clauses
 
-    fdp    ::= tyvar1 … tyvarn -> tyvarm     (n ≥ 1)
+    fundep ::= | [,] fdp1 , … , fdpn [,]       (n ≥ 1)   ;-- upd
 
-    guards ::= | [,] guard1, … , guardn [,]  (n ≥ 1)            ;-- upd
+    fdp    ::= tyvar1 … tyvarn -> tyvarm       (n ≥ 1)
 
+    guards ::= | [,] guard1, … , guardn [,]    (n ≥ 1)   ;-- upd
+
+.. code:: abnf
+
+    ;-- pragmas
+
+    qvars ::= [,] var1 , … , varn [,]          (n ≥ 1)  ;-- upd
+
+    decl_inl ::= {-# INLINE qvars #-}
+
+    decl_noinl ::= {-# NOINLINE qvars #-}
+
+    decl_spec ::= {-# SPECIALIZE [,] spec1 , … , speck [,] #-}   (k ≥ 1) ;-- upd
+
+    spec ::= vars [,] ::  type                          ;-- upd
+
+    decl_lang ::= {-# LANGUAGE lanexts #-}
+
+    lanexts ::= [,] lext1 , … , lextn [,]      (n ≥ 1)  ;-- upd
 
 These changes allow extra commas in the all unordered structures:
 
@@ -247,27 +265,24 @@ These changes allow extra commas in the all unordered structures:
 - module import sub-"lists"
 - deriving clauses
 - default clauses
-- list-comprehensions and fully expanded lists (expressions and patterns)
-- record-like occurrences in terms and types (declarations, patterns, constructions)
+- list-comprehensions and literal list (expressions and patterns)
+- records in terms and types (declarations, patterns, constructions)
 - multi-name signatures (including nested in records)
 - fixity "lists"
 - fundeps clauses
 - guard clauses
+- pragmas clauses
+
+  - ``LANGUAGE``
+  - ``INLINE``
+  - ``NOINLINE``
+  - ``SPECIALIZE``
+  - ``COMPLETE``
+  - ``ANN``
 
 This proposal does not cover tuple-like structures, 
 such as tuples, constraint tuples and s-context.
 
-Pragmas
-~~~~~~~~~~~~
-
-This extension also affects Pragmas, which allow us to write sequences in them, such as
-
-- ``LANGUAGE``
-- ``INLINE``
-- ``NOINLINE``
-- ``SPECIALIZE``
-- ``COMPLETE``
-- ``ANN``
 
 Examples
 --------
@@ -349,6 +364,26 @@ Examples
             , mkBaz
           ) where 
 
+4. **Pragmas**
+   ::
+
+     {-# LANGUAGE ExtraNonTupleCommas #-}
+     {-# LANGUAGE Haskell2010,
+                  TupleSections,
+     #-}
+
+     factorial :: Num a => a -> a  
+     factorial 0 = 0  
+     factorial n = n ⋆ factorial (n-1)  
+     {-# SPECIALIZE factorial :: Int -> Int,  
+                    factorial :: Integer -> Integer,
+     #-}
+
+     foo1, bar, baz, :: ....
+     {-# INLINE foo1, 
+                bar, 
+                baz, 
+     #-}
 
 Effect and Interactions
 -----------------------
