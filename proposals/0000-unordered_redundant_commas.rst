@@ -213,7 +213,7 @@ The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** lead
         | qcon { [,] fbind1 , … , fbindn [,] }      (labeled construction, n ≥ 0)   ;-- upd
         | aexp_(qcon) { [,] fbind1 , … , fbindn [,] }   (labeled update, n  ≥  1)   ;-- upd
 
-    apat ::= var [ @ apat]	                                         (as pattern)
+    apat ::= var [ @ apat]                                           (as pattern)
         | ……
         | [ [,] pat1 , … , patk [,] ]                       (list pattern, k ≥ 1)   ;-- upd
         | ……
@@ -257,6 +257,10 @@ The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** lead
 
     lanexts ::= [,] lext1 , … , lextn [,]      (n ≥ 1)  ;-- upd
 
+    decl_cmpl ::= {-# COMPLETE cmplpats #-}
+
+    cmplpats ::= [,] pat1 , … , patn [,]       (n ≥ 1)  ;-- upd
+
 These changes allow extra commas in the all unordered structures:
 
 - module export "lists"
@@ -278,7 +282,6 @@ These changes allow extra commas in the all unordered structures:
   - ``NOINLINE``
   - ``SPECIALIZE``
   - ``COMPLETE``
-  - ``ANN``
 
 This proposal does not cover tuple-like structures, 
 such as tuples, constraint tuples and s-context.
@@ -369,6 +372,7 @@ Examples
 
      {-# LANGUAGE ExtraNonTupleCommas #-}
      {-# LANGUAGE Haskell2010,
+                  DeriveDataTypeable,
                   TupleSections,
      #-}
 
