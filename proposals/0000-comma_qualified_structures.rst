@@ -105,6 +105,26 @@ This proposal introduces the following syntactical changes to Haskell:
 
        unlftTuple1 = (# 1#, 'x'#, 3.2## #) data
 
+       instance (GSerialize a, GSerialize b,) data => GSerialize (a :+: b) where
+
+       myfun1 :: forall a s. (
+                    C1 a,
+                    C2 a s,
+                    C3 s,
+                ) data. =>
+                     (# 
+                       SuperLongType a,
+                       SuperPuperLongType a s,
+                       MegaPuperLongType (Maybe a),
+                     #) data
+                     -> Int#
+                     -> Int#
+                     -> Int#
+       myfun1 = ....
+
+       myTuple3 :: (,Int, String, Char,) data
+       myTuple3 = (,1, "2abc", 'd') data
+
 3. **Comma Qualified solo-tuples**: Allow to write solo-tuples with ``data`` keyword ::
 
        mySoloTuple :: (Int) data
@@ -132,26 +152,6 @@ This proposal introduces the following syntactical changes to Haskell:
                     8,
                 ] data
 
-      instance (GSerialize a, GSerialize b,) data => GSerialize (a :+: b) where
-
-      myfun1 :: forall a s. (
-                    C1 a,
-                    C2 a s,
-                    C3 s,
-                ) data. =>
-                     (# 
-                       SuperLongType a,
-                       SuperPuperLongType a s,
-                       MegaPuperLongType (Maybe a),
-                     #) data
-                     -> Int#
-                     -> Int#
-                     -> Int#
-      myfun1 = ....
-
-      myTuple3 :: (,Int, String, Char,) data
-      myTuple3 = (,1, "2abc", 'd') data
-
       myList3 :: [Int]
       myList3 = [
                     , 1
@@ -163,8 +163,23 @@ This proposal introduces the following syntactical changes to Haskell:
                     , 7 
                     , 8
                 ] data
-      
-5. **Qualified trailing & leading commas**: 
+
+5. **Comma Qualified records**: Allow to write ``data`` keyword after record close bracket `}` in lists at terms and types.
+   The only difference between qualified and non-qualified lists is:
+   
+   - non-qualified records don't allow extra commas, but allow presumably/conceivable ``RecordSections`` extension
+   - qualified lists allow exra commas, but ignore presumably/conceivable ``RrecordtSections`` extension
+
+   ::
+
+      data instance URec (Ptr ()) p = UAddr   { uAddr#   :: Addr#,    } data
+
+      data instance URec Char     p = UChar   { uChar#   :: Char#,   uInt# :: Int#, } data
+
+      data instance URec Double   p = UDouble { uDouble# :: Double#, uInt# :: Int#, uFloat#  :: Float#, } data
+
+
+6. **Qualified trailing & leading commas**: 
 
    - Allow a comma before the first element in qualified 
      records, lists (expanded, non-enumerations) and tuples/constraint tuples/s-context.
@@ -208,6 +223,12 @@ The formal grammar changes for ``ExtraDataCommas``:
         | ……
         | qcon { [,] fpat1 , … , fpatk [,] } [data]      (labeled pattern, k ≥ 0)   ;-- upd
 
+These changes allow extra commas in the all unordered structures:
+
+- tuples, constraint tuples, s-content
+- list-comprehensions and literal list (expressions and patterns)
+- records in terms and types (declarations, patterns, constructions)
+- nested multi-name signatures in records
 
 Proposed Library Change Specification
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -290,7 +311,7 @@ for ``BangPatterns``, ``AsPattern``, ``StrictPattern``,  ``Irrefutable Patterns`
 Tuple Section
 ~~~~~~~~~~~~~~~~~~
 
-Both ``TupleSection`` extension and presumable/conceivable ``ListSection`` extension
+Both ``TupleSection`` extension and presumable/conceivable ``ListSection``, ``RecordSection`` extensions
 are fully consistent and compatible with ``ExtraDataCommas``.
 
 
@@ -319,19 +340,26 @@ Alternative Syntax
 Alternative to ``(x, y, z) data`` and ``[x, y, z] data`` syntax we could choose alternative syntax,
 like ``q(x, y, z)`` and ``q[x, y, z]`` or ``%(x, y, z)`` and ``%[x, y, z]``. Or alternative keywords could be chosen, like ``qualified``.
 
+Alternative Rule for Commas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This proposal has synchronized rules with 748 Proposal:
+
+  We allow Leading Comma AND Trailing Comma (in single Structure) but WITHOUT Repetitive Commas.
+
+Alternative to this are different rules, which are different from described one.
+
 
 Unresolved Questions
 --------------------
 
-Since the length of the ``qualified`` keyword is long it is better to have some Unicode ``Char`` equivalent in ``UnicodeSyntax``.
-
-But is unclear what to choose.
+None.
 
 
 Implementation Plan
 -------------------
 
-It is unclear.
+Unclear. The author cannot implement this proposal.
 
 
 Acknowledgments
@@ -346,6 +374,8 @@ Thanks to all contributors of `Add Support for Trailing and Leading Commas in Li
 Thanks to all contributors of `Allow Trailing Comma in List Constructor Syntaxs 
 <https://github.com/ghc-proposals/ghc-proposals/issues/653>`__.
 
+Thanks to all contributors of `Extra NonTuple Commas 
+<https://github.com/ghc-proposals/ghc-proposals/issues/748>`__.
 
 Endorsements
 -------------
