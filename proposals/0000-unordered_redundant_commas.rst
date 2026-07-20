@@ -530,7 +530,7 @@ Alternative adding extra commas
 
      lead_AND_trail_WITHOUT_repeats ::=  [','] { elem_i ',' } elem_max [','] 
 
-     lead_AND_trail_WITH_repeats    ::=  {','} { elem_i '', {','} } elem_max {','} 
+     lead_AND_trail_WITH_repeats    ::=  {','} { elem_i ',' {','} } elem_max {','} 
 
 4. The proposal suggests to allow extra commas in code, but the committee could also allow or disallow extra commas in **pragmas**.
 
