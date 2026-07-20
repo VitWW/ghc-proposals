@@ -12,7 +12,7 @@ Extra NonTuple Commas
 
 This proposal suggests extending the Haskell syntax to support trailing and leading commas 
 in most structures (pragmas, lists, records, import and export lists and sublists, derivation and default clauses,
-fixity, guards and fundeps declaration) except tuple-like structures.
+fixity, guards and fundeps declaration, different multi-name signatures) except tuple-like structures.
 
 This change aims to improve code readability and maintainability by allowing more flexibility 
 in formatting all structures but not in tuple-like.
@@ -164,102 +164,126 @@ The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** lead
 
     ;-- export and import "lists" and sub-"lists"
 
-    exports ::= ( [,] export1 , … , exportn [,] )                    ;-- upd
+    exports ::= '(' [','] export1 ',' … ',' exportn [','] ')'            ;-- upd
 
     export  ::= qvar
-        | qtycon[(..)| ( [,] cname_1, … , cname_n [,] ) ]  (n >= 0)  ;-- upd
-        | qtycls[(..)| ( [,] var_1, … , var_n [,] ) ]      (n >= 0)  ;-- upd
-        | module modid
+        | qtycon [ ('..') | ( [','] cname1 ',' … ',' cnamen [','] ) ]  (n >= 0)  ;-- upd
+        | qtycls [ ('..') | ( [','] var1 ',' … ',' var_n [','] ) ]     (n >= 0)  ;-- upd
+        | 'module' modid
         | ……
    
-    impspec ::= ( [,] import1 , … , importn [,] )          (n ≥ 0)   ;-- upd
-        | hiding ( [,] import1 , … , importn [,] )         (n ≥ 0)   ;-- upd
+    impspec ::= '(' [','] import1 ',' … ',' importn [','] ')'     (n ≥ 0)   ;-- upd
+        | 'hiding' '(' [','] import1 ',' … ',' importn [','] ')'  (n ≥ 0)   ;-- upd
 
     import  ::= qvar
-        | qtycon[(..)| ( [,] cname_1, … , cname_n [,] ) ]  (n >= 0)  ;-- upd
-        | qtycls[(..)| ( [,] var_1, … , var_n [,] ) ]      (n >= 0)  ;-- upd
+        | qtycon [ ('..') | ( [','] cname1 ',' … ',' cnamen [','] ) ]  (n >= 0)  ;-- upd
+        | qtycls [ ('..') | ( [','] var1 ',' … ',' var_n [','] ) ]     (n >= 0)  ;-- upd
         | ……
 
     ;-- deriving clauses
 
-    deriving ::= deriving dclass
-            | deriving (  
-                 ( [,] dclass1 , … , dclassn [,] )                   ;-- upd
-              )
+    deriving ::= 'deriving' dclass
+            | 'deriving' '('  
+                 ( [','] dclass1 ',' … ',' dclassn [','] )              ;-- upd
+              ')'
 
     ;-- default clauses
 
-    topdecl  ::= type simpletype = type
-        | default ( [,] type1 , … , typen [,] )                      ;-- upd
-        | class [scontext =>] tycls tyvar [fundep] [where cdecls]
+    topdecl  ::= 'type' simpletype '=' type
+        | 'default' '(' [','] type1 ',' … ',' typen [','] ')'            ;-- upd
+        | 'class' [scontext '=>'] tycls tyvar [fundep] ['where' cdecls]
         | ……
 
 .. code:: abnf
 
     ;-- records and lists: expression, patterns, declaration
 
-    constr ::= con [!] atype1 … [!] atypek                  (arity con = k, k>=0)
-        | (btype | ! atype) conop (btype | ! atype)                 (infix conop)
-        | con { [,] fielddecl1 , … , fielddecln [,] }              (records n>=0)   ;-- upd
+    constr ::= con ['!'] atype1 … ['!'] atypek                 (arity con = k, k>=0)
+        | '(' btype | '!' atype) conop (btype | '!' atype ')'          (infix conop)
+        | con '{' [','] fielddecl1 ',' … ',' fielddecln [','] '}'     (records n>=0)  ;-- upd
         | ……
 
-    fielddecl ::= vars :: (type | ! atype)
+    fielddecl ::= vars '::' (type | '!' atype)
 
-    aexp ::= qvar                                                      (variable)
+    aexp ::= qvar                                                                   (variable)
         | ……
-        | [ [,] exp1 , … , expk [,] ]                               (list, k ≥ 1)   ;-- upd
-        | [ exp | [,] qual1 , … , qualn [,] ]         (list comprehension, n ≥ 1)   ;-- upd
+        | '[' [','] exp1 ',' … ',' expk [','] ']'                                (list, k ≥ 1)   ;-- upd
+        | '[' exp '|' [','] qual1 ',' … ',' qualn [','] ']'        (list comprehension, n ≥ 1)   ;-- upd
         | ……
-        | qcon { [,] fbind1 , … , fbindn [,] }      (labeled construction, n ≥ 0)   ;-- upd
-        | aexp_(qcon) { [,] fbind1 , … , fbindn [,] }   (labeled update, n  ≥  1)   ;-- upd
+        | qcon '{' [','] fbind1 ',' … ',' fbindn [','] '}'       (labeled construction, n ≥ 0)   ;-- upd
+        | aexp_(qcon) '{' [','] fbind1 ',' … ',' fbindn [','] '}'    (labeled update, n  ≥  1)   ;-- upd
 
-    apat ::= var [ @ apat]                                           (as pattern)
+    apat ::= var [ '@' apat]                                                      (as pattern)
         | ……
-        | [ [,] pat1 , … , patk [,] ]                       (list pattern, k ≥ 1)   ;-- upd
+        | '[' [','] pat1 ',' … ',' patk [','] ']'                        (list pattern, k ≥ 1)   ;-- upd
         | ……
-        | qcon { [,] fpat1 , … , fpatk [,] }             (labeled pattern, k ≥ 0)   ;-- upd
+        | qcon '{' [','] fpat1 ',' … ',' fpatk [','] '}'              (labeled pattern, k ≥ 0)   ;-- upd
 
 .. code:: abnf
 
     ;-- fixity "lists", multi-name signatures
 
-    gendecl ::= vars :: [context =>] type       (type signature)
-        | fixity [integer] ops	            (fixity declaration)
-        |                                    (empty declaration)
+    gendecl ::= vars '::' [context '=>'] type      (type signature)
+        | 'fixity' [integer] ops               (fixity declaration)
+        |                                       (empty declaration)
 
-    vars ::= [,] var1 , … , varn [,]           (n ≥ 1)   ;-- upd
+    topdecl ::= 'type' simpletype '=' type            (simple type declaration)
+        | 'type' qtycons '::' type                     (multi-type declaration)
+        | 'pattern' pats '::' type ['where' pdecls]       (pattern declaration)
+        | ……
 
-    ops  ::= [,] op1 , … , opn [,]             (n ≥ 1)   ;-- upd
+    vars ::= [','] var1 ',' … ',' varn [',']           (n ≥ 1)   ;-- upd
+
+    ops  ::= [','] op1 ',' … ',' opn [',']             (n ≥ 1)   ;-- upd
+
+    pats ::= [','] pat1 ',' … ',' patn [',']           (n ≥ 1)   ;-- upd
+
+    qtycons ::= [','] qtycon1 ',' … ',' qtyconn [',']  (n ≥ 1)   ;-- upd
+
 
     ;-- fundeps clauses & guard clauses
 
-    fundep ::= | [,] fdp1 , … , fdpn [,]       (n ≥ 1)   ;-- upd
+    fundep ::= '|' [','] fdp1 ',' … ',' fdpn [',']       (n ≥ 1)   ;-- upd
 
-    fdp    ::= tyvar1 … tyvarn -> tyvarm       (n ≥ 1)
+    fdp    ::= tyvar1 … tyvarn '->' tyvarm               (n ≥ 1)
 
-    guards ::= | [,] guard1, … , guardn [,]    (n ≥ 1)   ;-- upd
+    guards ::= '|' [','] guard1 ',' … ',' guardn [',']   (n ≥ 1)   ;-- upd
 
 .. code:: abnf
 
     ;-- pragmas
 
-    qvars ::= [,] var1 , … , varn [,]          (n ≥ 1)  ;-- upd
+    inlprgmdcl   ::= '{-#' 'INLINE' qvars '#-}'
 
-    decl_inl ::= {-# INLINE qvars #-}
+    noinlprgmdcl ::= '{-#' 'NOINLINE' qvars '#-}'
 
-    decl_noinl ::= {-# NOINLINE qvars #-}
+    deprprgmdcl  ::= '{-#' 'DEPRECATED' qvars txt '#-}'
 
-    decl_spec ::= {-# SPECIALIZE [,] spec1 , … , speck [,] #-}   (k ≥ 1) ;-- upd
+    wrngprgmdcl  ::= '{-#' 'WARNING' qvars txt '#-}'
 
-    spec ::= vars [,] ::  type                          ;-- upd
+    qvars   ::= [','] var1 ',' … ',' varn [',']          (n ≥ 1)  ;-- upd
 
-    decl_lang ::= {-# LANGUAGE lanexts #-}
+    specprgmdcl    ::= '{-#' 'SPECIALIZE' specs '#-}'
 
-    lanexts ::= [,] lext1 , … , lextn [,]      (n ≥ 1)  ;-- upd
+    specinlprgmdcl ::= '{-#' 'SPECIALIZE' 'INLINE' specs '#-}'
 
-    decl_cmpl ::= {-# COMPLETE cmplpats #-}
+    specs ::= [','] spec1 ',' … ',' specn [',']          (n ≥ 1)  ;-- upd
 
-    cmplpats ::= [,] pat1 , … , patn [,]       (n ≥ 1)  ;-- upd
+    spec  ::= vars [','] '::'  type                               ;-- upd
+
+    langprgmdcl ::= '{-#' 'LANGUAGE' lanexts '#-}'
+
+    lanexts     ::= [','] lext1 ',' … ',' lextn [',']    (n ≥ 1)  ;-- upd
+
+    cmplprgmdcl ::= '{-#' 'COMPLETE' cmplpats '#-}'
+
+    cmplpats    ::= [','] pat1 ',' … ',' patn [',']      (n ≥ 1)  ;-- upd
+
+    mingprgmdcl ::= '{-#' 'MINIMAL' mindef '#-}'
+
+    mindef ::= [','] var1 ',' … ',' varn [',']      ;-- upd
+        |  [','] '(' mindef ')' [',']               ;-- upd
+        |  mindef '|' mindef
 
 These changes allow extra commas in the all unordered structures:
 
@@ -272,23 +296,30 @@ These changes allow extra commas in the all unordered structures:
 - list-comprehensions and literal list (expressions and patterns)
 - records in terms and types (declarations, patterns, constructions)
 - multi-name signatures (including nested in records)
+- multi-name patten signatures
+- multi-name type-synonym signatures
 - fixity "lists"
 - fundeps clauses
 - guard clauses
 - pragmas clauses
 
-  - ``LANGUAGE``
+  - ``COMPLETE``
+  - ``DEPRECATED``
   - ``INLINE``
   - ``NOINLINE``
+  - ``LANGUAGE``
+  - ``MINIMAL``
   - ``SPECIALIZE``
-  - ``COMPLETE``
+  - ``SPECIALIZE INLINE``
+  - ``WARNING``
 
 This proposal does not cover tuple-like structures, 
-such as tuples, constraint tuples and s-context.
+such as tuples, unboxed tuples, constraint tuples and s-context.
 
 
 Examples
 --------
+
 1. **Improved Diff Quality**:
 
    Adding or removing an element often requires changing 2 lines of code
@@ -392,9 +423,23 @@ Examples
 Effect and Interactions
 -----------------------
 
-None.
+Tuple Sections
+~~~~~~~~~~~~~~
 
 This proposal purposefully dodges interacting with ``TupleSections`` extension.
+With ``TupleSection`` it is impossible to distinguish syntexically section ``(, a)`` from extra comma ``(, a)``.
+
+That's why this proposal do not cover tuples, unboxed tuples, constraint tuples and s-context.
+
+Standalone Type Signatures
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We allow to use extra commas in multi-name type-synonym signatures with ``StandaloneTypeSignatures`` extension.
+
+Pattern Synonyms
+~~~~~~~~~~~~~~~~
+
+We allow to use extra commas in multi-name patten signatures with ``PatternSynonyms`` extension.
 
 
 Costs and Drawbacks
@@ -454,9 +499,9 @@ Alternative adding extra commas
    The main disadvantage of the OR-version is disallowing the mixing of code-styles. 
    Also, the stricter version needs more complex parsing: ::
 
-      lead_OR_trail  ::= ( , subList ) | ( subList [,] )
+      lead_OR_trail  ::= ( ',' subList ) | ( subList [','] )
 
-      lead_AND_trail ::= [,] subList [,]
+      lead_AND_trail ::= [','] subList [',']
 
 3. The proposal suggests to allow extra commas **WITHOUT** repetitive commas, but the committee could choose instead to allow
    extra commas **WITH** repetitive commas. This would be more lenient.
@@ -483,9 +528,9 @@ Alternative adding extra commas
    The main benefit of the WITH-version is the maximum liberalisation of using extra commas. 
    Also, the more lenient version has almost the same parsing ::
 
-     lead_AND_trail_WITHOUT_repeats ::=  [,] { elem_i , } elem_max [,] 
+     lead_AND_trail_WITHOUT_repeats ::=  [','] { elem_i ',' } elem_max [','] 
 
-     lead_AND_trail_WITH_repeats    ::=  {,} { elem_i , {,} } elem_max {,} 
+     lead_AND_trail_WITH_repeats    ::=  {','} { elem_i '', {','} } elem_max {','} 
 
 4. The proposal suggests to allow extra commas in code, but the committee could also allow or disallow extra commas in **pragmas**.
 
