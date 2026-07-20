@@ -297,7 +297,7 @@ These changes allow extra commas in the all unordered structures:
 - default clauses
 - list-comprehensions and literal list (expressions and patterns)
 - records in terms and types (declarations, patterns, constructions)
-- multi-name signatures (including nested in records)
+- multi-name function signatures (including nested fields in records)
 - multi-name patten signatures
 - multi-name type-synonym signatures
 - fixity "lists"
