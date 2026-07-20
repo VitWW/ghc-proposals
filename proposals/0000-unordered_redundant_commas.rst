@@ -26,7 +26,7 @@ Motivation
 In many programming languages, including JavaScript, Python, and Rust, trailing commas in lists
 (and other collection types) are a common feature.
 
-This causes the problem that code needs to be repeated::
+For example some features causes the problem that code needs to be repeated::
 
     module Foo (
     #ifdef TESTING
