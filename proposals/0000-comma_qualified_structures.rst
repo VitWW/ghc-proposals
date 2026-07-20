@@ -124,8 +124,8 @@ The formal grammar changes for ``DataTuples``:
     
     atype := gtycon
         | tyvar                                                 ;-- kmax = if 'data' then 1 else 2
-        | '('  [','] type1 ',' … ',' typek [','] ')'  ['data']       (tuple type, k>=kmax)  ;-- upd
-        | '(#' [','] type1 ',' … ',' typek [','] '#)' ['data']  (unboxed tuple type, k>=1)  ;-- upd
+        | '('  [','] type1 ',' … ',' typek [','] ')'  ['data']       (tuple type, k ≥ kmax)  ;-- upd
+        | '(#' [','] type1 ',' … ',' typek [','] '#)' ['data']  (unboxed tuple type, k ≥ 1)  ;-- upd
         | ……
 
     gtycon := qtycon
