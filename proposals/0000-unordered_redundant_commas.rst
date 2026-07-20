@@ -224,8 +224,10 @@ The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** lead
     ;-- fixity "lists", multi-name signatures
 
     gendecl ::= vars '::' [context '=>'] type      (type signature)
-        | 'fixity' [integer] ops               (fixity declaration)
+        | fixity [integer] ops                 (fixity declaration)
         |                                       (empty declaration)
+
+    fixity ::= 'infixl' | 'infixr' | 'infix'
 
     topdecl ::= 'type' simpletype '=' type            (simple type declaration)
         | 'type' qtycons '::' type                     (multi-type declaration)
