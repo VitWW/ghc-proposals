@@ -1,5 +1,5 @@
-Extra Data Commas
-=====================
+Data Tuples
+============
 
 .. author:: Viktor WW
 .. date-accepted::
@@ -11,10 +11,10 @@ Extra Data Commas
 .. contents::
 
 This proposal suggests extending the Haskell syntax by adding alternative syntax 
-for lists, records, tuples and constraint tuples with build support of trailing and leading commas.
+for tuple-like structures with build support of trailing and leading commas.
 
 This change aims to improve code readability and maintainability by allowing more flexibility 
-in formatting lists, records, tuples and constraint tuples. 
+in formatting boxed and unboxed tuples, constraint tuples and class context. 
 
 First of all, particularly important in scenarios involving version control, code reviews, and automated code generation.
 
@@ -27,8 +27,21 @@ In many programming languages, including JavaScript, Python, and Rust, trailing 
 
 This feature provides several benefits:
 
-1. **Improved Diff Quality**: When adding or removing items in a list, having a trailing comma means only the relevant lines are changed in version control systems, 
-   reducing the noise in diffs and making reviews easier.
+1. **Improved Diff Quality**: When adding or removing items in a tuple structure, having a trailing or leading comma means only
+   the relevant lines are changed, reducing the noise in diffs and making reviews easier.
+  
+2. **Ease of Code Modification**: Developers can add new elements to the end / beginning of a structure without having 
+   to modify the previous last / first line, which reduces the likelihood of syntax errors.
+
+3. **Consistency in Formatting**: When generating code automatically or formatting structures in a specific way, 
+   leading and trailing commas can simplify the process.
+
+4. **Use a different style of coding**: Extra commas allow for different styles to write code.
+
+5. **Simplicity of conditional meta-programming**: Extra commas allow to write much simpler code when conditional meta-programming is used.
+
+
+Now git-diffs often looks like this:
 
 .. code-block:: diff
 
@@ -40,8 +53,10 @@ This feature provides several benefits:
   -   "cherry"
   +   "cherry",
   +   "peach"
-      ]
-      
+      )
+
+but we wish to write insted:
+
 .. code-block:: diff
 
   --- example.hs	2024-06-10 12:00:00 +0000
@@ -51,67 +66,152 @@ This feature provides several benefits:
       "banana",
       "cherry",
   +   "peach",
-      ]
+      ) data
       
-2. **Ease of Code Modification**: Developers can add new elements to the end of a list without having to modify the previous last line, which reduces the likelihood of syntax errors.
-
-3. **Consistency in Formatting**: When generating code automatically or formatting lists in a specific way, leading and trailing commas can simplify the process.
-
-
-History
-~~~~~~~~~~~~
-
-Adding trailing commas (and more rarely leading commas) is a frequently asked feature to add in Haskell.
-
-But this task is highly divisive in the Haskell community.
-
-Original Proposal #87 `ExtraCommas (was: Trailing and leading commas in sub-export lists) <https://github.com/ghc-proposals/ghc-proposals/pull/87>`__ 
-was discussed for several years, and that discussion was so controversial 
-that the author withdrew their own proposal just before the final Acceptation was received (with minor changes).
-
-Unfortunately, redundant commas contradict with ``TupleSection`` (and presumably/conceivable ``ListSections``) extension's notation. This is inconstancy.
-
-This proposal is an attempt to allow redundant commas more universally and consistently.
-
 
 Proposed Change Specification
 -----------------------------
 
-Main idea is: 
-
-1. To forbid redundant commas for existing data structures (records, lists and tuples, list comprehensions, constraint tuples)
-
-2. To create an alternating syntax for data structures (records, lists, tuples, and constraint tuples) that has built support
-   for trailing and leading commas.
+Main idea is:  To create an alternating syntax for tuple-like structures 
+that has built support for trailing and leading commas and are not affected by ``TupleSection`` extension.
 
 This proposal introduces the following syntactical changes to Haskell:
 
-1. Add language extension ``ExtraDataCommas``
+1. Add language extension ``DataTuples``
 
-2. **Comma Qualified tuples**: Allow to write ``data`` keyword after tuple close bracket `)` in tuples, 
-   unboxed-tuples and constraint tuples at terms and types.
+2. Add language extension ``ExtraCommas`` which is just unification of 2 extensions: ``ExtraCommas = DataTuples + ExtraNonTupleCommas``
 
-   The only difference between qualified and non-qualified lists is:
+3. **Comma Qualified tuples**: Allow to write ``data`` keyword after tuple close bracket `)` in tuples, 
+   unboxed-tuples, constraint tuples and class context at terms and types.
 
-   - non-qualified tuples don't allow extra commas, but allow ``TupletSections`` (or presumably allow for constraint tuples)
-   - qualified tuples allow extra commas, but ignore ``TupletSections``
-     ::
+   The only difference between ``data``-qualified and ordinary tuples is:
+
+   - ordinary tuples don't allow extra commas, but allow tupling constructors and ``TupletSections`` (if values are not Constraint king)
+   
+   - ``data``-qualified tuples allow extra commas, but ignore ``TupletSections``
+   
+     - Allow a comma before the first element after opening bracket ``(`` or ``(#``
+	
+     - Allow a comma after the last element before closing bracket ``)``  or ``#)``
+	
+     - Allow both trailing & leading commas in same structure
+   
+       ::
   
-       myTuple1 :: (Int, String, Char)
-       myTuple1 = (1, "2abc", 'd') data
+         myTuple1 :: (Int, String, Char)
+         myTuple1 = (1, "2abc", 'd') data
 
-       myTuple2 :: (Int, Int, String, Char) data
-       myTuple2 = (42, 43, "xyz", 'w') data
+         myTuple2 :: (, Int, Int, String, Char) data
+         myTuple2 = (42, 43, "xyz", 'w',) data
+
+         myTuple3 :: (,Int, String, Char,) data
+         myTuple3 = (,1, "2abc", 'd') data
+
+4. **Comma Qualified solo-tuples**: Allow to write solo-tuples with ``data`` keyword ::
+
+       mySoloTuple :: (Int) data
+       mySoloTuple  = (5) data
+
+
+Syntax
+~~~~~~~~~~~~
+	  
+The formal grammar changes for ``DataTuples``:
+
+.. code:: abnf
+
+    ;-- tuples, unboxed tuples, constraint tuples
+    
+    atype := gtycon
+        | tyvar                                                 ;-- kmax = if 'data' then 1 else 2
+        | '('  [','] type1 ',' … ',' typek [','] ')'  ['data']       (tuple type, k>=kmax)  ;-- upd
+        | '(#' [','] type1 ',' … ',' typek [','] '#)' ['data']  (unboxed tuple type, k>=1)  ;-- upd
+        | ……
+
+    gtycon := qtycon
+        | '(' ')' ['data']        (unit type)           ;-- upd
+        | '(#' '#)' ['data']      (unlifted unit type)  ;-- upd
+        | ……
+
+.. code:: abnf
+
+    ;-- class content
+
+    topdecl := 'type' simpletype '=' type
+        | 'data' [context '=>'] simpletype ['=' constrs] [deriving]
+        | 'newtype' [context '=>'] simpletype '=' newconstr [deriving]
+        | 'class' [scontext '=>'] tycls tyvar ['where' cdecls]
+        | 'instance' [scontext '=>'] qtycls inst ['where' idecls]
+        | ……
+
+    gendecl := vars '::' [context '=>'] type      (type signature)
+        | fixity [integer] ops                (fixity declaration)
+        |                                      (empty declaration)
+
+    exp := infixexp '::' [context '=>'] type   (expression type signature)
+        | infixexp
+
+    context := class
+        | '(' ',' cntclasses [','] ')' 'data'                   ;-- upd
+        | '(' cntclasses ((')' ['data']) | (',' ')' 'data'))    ;-- upd
+
+
+    scontext := simpleclass
+        | '(' ',' scntclasses [','] ')' 'data'                   ;-- upd
+        | '(' scntclasses ((')' ['data']) | (',' ')' 'data'))    ;-- upd
+		
+    cntclasses := class1 ',' … ',' classn               (n ≥ 0)  ;-- upd
+
+    class := qtycls tyvar
+        | qtycls '(' tyvar atype1 … atypen ')'          (n ≥ 1)
+
+    scntclasses := simpleclass1 ',' … ',' simpleclassn  (n ≥ 0)  ;-- upd
+
+    simpleclass := qtycls tyvar
+ 
+    simpletype  := tycon tyvar1 … tyvark                (k ≥ 0)
+
+
+These changes allow extra commas in the all tuple-like structures:
+
+- tuples
+- unboxed tuples
+- constraint tuples
+- class content
+
+This proposal does not cover tupling constructors for obvious reasons.
+
+
+Examples
+--------
+
+1. **Trailing Commas**
+
+   Instance with content with trailing comma::
+
+       instance ( 
+                  GSerialize a, 
+                  GSerialize b,
+                ) data 
+            => 
+                GSerialize (a :+: b) 
+            where
+               ...
+
+
+      
+2. Mix of data-tuples
+
+   Unboxed tupleles, class context ::
 
        unlftTuple1 = (# 1#, 'x'#, 3.2## #) data
 
-       instance (GSerialize a, GSerialize b,) data => GSerialize (a :+: b) where
 
        myfun1 :: forall a s. (
                     C1 a,
                     C2 a s,
                     C3 s,
-                ) data. =>
+                ) data =>
                      (# 
                        SuperLongType a,
                        SuperPuperLongType a s,
@@ -122,203 +222,42 @@ This proposal introduces the following syntactical changes to Haskell:
                      -> Int#
        myfun1 = ....
 
-       myTuple3 :: (,Int, String, Char,) data
-       myTuple3 = (,1, "2abc", 'd') data
-
-3. **Comma Qualified solo-tuples**: Allow to write solo-tuples with ``data`` keyword ::
-
-       mySoloTuple :: (Int) data
-       mySoloTuple  = (5) data
-
-4. **Comma Qualified lists**: Allow to write ``data`` keyword after list close bracket `]` in lists at terms and types.
-   The only difference between qualified and non-qualified lists is:
-   
-   - non-qualified lists don't allow extra commas, but allow presumably/conceivable ``ListSections`` extension
-   - qualified lists allow exra commas, but ignore presumably/conceivable ``ListSections`` extension
-
-   ::
-     
-      myList1 = [1, 2, 3, 4, 5, 6, 7, 8] data
-
-      myList2 :: [Int]
-      myList2 = [
-                    1, 
-                    2, 
-                    3, 
-                    4, 
-                    5, 
-                    6, 
-                    7, 
-                    8,
-                ] data
-
-      myList3 :: [Int]
-      myList3 = [
-                    , 1
-                    , 2 
-                    , 3 
-                    , 4 
-                    , 5 
-                    , 6 
-                    , 7 
-                    , 8
-                ] data
-
-5. **Comma Qualified records**: Allow to write ``data`` keyword after record close bracket `}` in lists at terms and types.
-   The only difference between qualified and non-qualified lists is:
-   
-   - non-qualified records don't allow extra commas, but allow presumably/conceivable ``RecordSections`` extension
-   - qualified lists allow exra commas, but ignore presumably/conceivable ``RrecordtSections`` extension
-
-   ::
-
-      data instance URec (Ptr ()) p = UAddr   { uAddr#   :: Addr#,    } data
-
-      data instance URec Char     p = UChar   { uChar#   :: Char#,   uInt# :: Int#, } data
-
-      data instance URec Double   p = UDouble { uDouble# :: Double#, uInt# :: Int#, uFloat#  :: Float#, } data
-
-
-6. **Qualified trailing & leading commas**: 
-
-   - Allow a comma before the first element in qualified 
-     records, lists (expanded, non-enumerations) and tuples/constraint tuples/s-context.
-
-   - Allow a comma after the last element in qualified 
-     records, lists (expanded, non-enumerations) and tuples/constraint tuples/s-context.
-
-   - Allow both trailing & leading commas in  same qualified structure
-
-
-Syntax
-~~~~~~~~~~~~
-	  
-The formal grammar changes for ``ExtraDataCommas``:
-
-.. code:: abnf
-
-    atype := gtycon
-        | tyvar
-        | ( [,] type1 , … , typek [,] ) [data]       (tuple type, k>=1)    --; upd
-        | (# [,] type1 , … , typek [,] #) [data]     (tuple type, k>=1)    --; upd
-        | '[' [,] type1 , … , typek [,] ']' [data]         (type, k>=1)    --; upd
-        | '[' type ']'	                                    (list type)
-        | qcon { [,] fbind1 , … , fbindn [,] } [data]         (labeled construction, n ≥ 0)   ;-- upd
-        | aexp_(qcon) { [,] fbind1 , … , fbindn [,] } [data]  (labeled update, n  ≥  1)       ;-- upd
-        | ……
-
-    gtycon := qtycon
-        | () [data]        (unit type)            --; upd
-        | (##) [data]      (unlifted unit type)   --; upd
-        | '[]' [data]      (list constructor)     --; upd
-        | ……
-
-    constr ::= con [!] atype1 … [!] atypek                  (arity con = k, k>=0)
-        | con { [,] fielddecl1 , … , fielddecln [,] } [data]       (records n>=0)   ;-- upd
-        | ……
-
-    apat ::= var [ @ apat]	                                         (as pattern)
-        | ……
-        | '[' [,] pat1 , … , patk [,] ']' [data]            (list pattern, k ≥ 1)   ;-- upd
-        | ……
-        | qcon { [,] fpat1 , … , fpatk [,] } [data]      (labeled pattern, k ≥ 0)   ;-- upd
-
-These changes allow extra commas in the all unordered structures:
-
-- tuples, constraint tuples, s-content
-- list-comprehensions and literal list (expressions and patterns)
-- records in terms and types (declarations, patterns, constructions)
-- nested multi-name signatures in records
-
-Proposed Library Change Specification
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This is a fully backwards-compatible syntax extension, so no changes to user libraries are required.
-
-Libraries from the GHC ecosystem may need to be updated to handle the new syntax.
-
-Examples
---------
-
-1. **Trailing Commas**
-
-   List with trailing comma::
-
-      numbers = [
-        1,
-        2,
-        3,
-      ] data
-
-   This would be equivalent to:
-
-   ::
-   
-      numbers = [1, 2, 3]
-      
-2. **Leading Commas**
-
-   List with leading comma::
-
-      fruits = [
-        , "apple"
-        , "banana"
-        , "cherry"
-      ] data
-      
-   This would be equivalent to: ::
-
-      fruits = ["apple", "banana", "cherry"]
-      
-3. **Combined Leading and Trailing Commas**
-
-   List with mix of leading and trailing commas::
-
-      mixed = [
-        , 1, 2
-        , 3, 4, -- 5
-      ] data
-      
-   This would be equivalent to:  ::
-
-      mixed = [1, 2, 3, 4]
 
 
 Effect and Interactions
 -----------------------
 
-We choose the **postfix variant** ``[x,y,z] qualified`` over **prefix variant** ``qualified [x,y,z]`` to avoid injections 
-for ``BangPatterns``, ``AsPattern``, ``StrictPattern``,  ``Irrefutable Patterns``, ``Specified(Qualified)Literals`` ::
+We choose the **postfix variant** ``(x,y,z) data`` over **prefix variant** ``data [x,y,z]`` to avoid injections 
+for ``BangPatterns``, ``AsPattern``, ``StrictPattern``,  ``Irrefutable Patterns``, data declaration ::
 
     -- Bang Patterns
     let !(,p,q,) data = e in body
     
-    let (!x, ![y,] data) = e in body
+    let (!x, !(y,) data) = e in body
 
     -- As Pattern
     foo1 :: (a, b) -> a
     foo1 t@(,p,q,) data = t
-
-    -- Specified(Qualified) Literals
-    bar2 a b  = M.[a, b,] data
-    
+   
     -- StrictPattern
     data T = MkT ~(Int, Int, Int,) data
     
     -- Irrefutable Patterns
-    let ~[a,b,] data = expr in e0 a b
+    let ~(a,b,) data = expr in e0 a b
+
+    -- Data declaration	vs function declaration
+	(a1, b1) data `op` (a2, b2) data = expr
 
 Tuple Section
 ~~~~~~~~~~~~~~~~~~
 
-Both ``TupleSection`` extension and presumable/conceivable ``ListSection``, ``RecordSection`` extensions
-are fully consistent and compatible with ``ExtraDataCommas``.
+``TupleSection`` extension do not interact with alternative syntax of data tuples.
 
 
 Costs and Drawbacks
 -------------------
 
-We expect the implementation and maintenance costs of ``ExtraDataCommas`` has medium difficulty.
+We expect the implementation and maintenance costs of ``DataTuples`` has medium difficulty.
 
 
 Backward Compatibility
@@ -334,11 +273,30 @@ Alternatives
 
 The primary alternative is "status quo".
 
+History
+~~~~~~~~~~~~
+
+Adding trailing commas (and more rarely leading commas) is a frequently asked feature to add in Haskell.
+
+But this task is highly divisive in the Haskell community.
+
+Original Proposal #87 `ExtraCommas (was: Trailing and leading commas in sub-export lists) <https://github.com/ghc-proposals/ghc-proposals/pull/87>`__ 
+was discussed for several years, and that discussion was so controversial 
+that the author withdrew their own proposal just before the final Acceptation was received (with minor changes).
+
+Unfortunately, redundant commas contradict with ``TupleSection`` 
+(and presumably/conceivable ``ListSections``) extension's notation. 
+This is inconstancy.
+
+This proposal is an attempt to allow redundant commas more universally and consistently.
+
 Alternative Syntax
 ~~~~~~~~~~~~~~~~~~
 
-Alternative to ``(x, y, z) data`` and ``[x, y, z] data`` syntax we could choose alternative syntax,
-like ``q(x, y, z)`` and ``q[x, y, z]`` or ``%(x, y, z)`` and ``%[x, y, z]``. Or alternative keywords could be chosen, like ``qualified``.
+Alternative to ``(x, y, z) data`` syntax we could choose alternative syntax,
+like ``q(x, y, z)`` or ``(x, y, z)q`` or ``%(x, y, z)`` and ``(x, y, z)%``. 
+
+Or alternative keywords could be chosen insted of ``data``, like ``qualified``.
 
 Alternative Rule for Commas
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
