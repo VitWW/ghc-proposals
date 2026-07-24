@@ -73,229 +73,27 @@ This feature provides several benefits:
 Proposed Change Specification
 -----------------------------
 
-This proposal introduces the following syntactical changes to Haskell:
-
-1. **New extension**: Add a new language extension ``ExtraNonTupleCommas`` which allows leading and trailing commas in code.
-
-     Extra commas (leading and trailing ones) are allowed everywhere where repetion with a comma is allowed
-     , except as part of constructs 
-     which are delimited by round brackets in terms or types (or constraints).
-
-   This means that this proposal does not cover tuple-like structures (including tuples, constraint tuples and s-context).
-
-2. **Trailing Commas**: Allow a comma after the last element in enumeration clauses in structures
-
-   - Trailing Commas in module export lists are already supported, but not in sub-lists
-   - Trailing Commas in module import lists are already supported, but not in sub-lists
-
-   ::
-   
-       module Foo
-		  ( -- * Types
-		    Foo,
-		    Bar (C, D,),
-			-- * Functions
-		    mkFoo,
-		  ) where 
-
-       data Example a = ....
-			deriving (
-				Functor,
-				Foldable,
-				Applicative,
-			)
-				
-       data family URec a p
-
-       data instance URec (Ptr ()) p = UAddr   { uAddr#   :: Addr#,    }
-       data instance URec Char     p = UChar   { uChar#   :: Char#,   uInt# :: Int#, }
-       data instance URec Double   p = UDouble { uDouble# :: Double#, uInt# :: Int#, uFloat#  :: Float#, }
-
-       infixr 5 (+), (-),
-
-       class C a b | a -> b, b -> a,  where ....
-
-	  
-3. **Leading Commas**: Allow a comma before the first element in enumeration clauses in structures
-
-   ::
-   
-       module Bar
-		  ( -- * Types
-		  , Foo
-		  , Bar  (
-			, C
-			, D
-		  )
-			-- * Functions
-		  , mkFoo
-		  ) where 
-
-      lst :: [Int]
-      lst = [ 
-              1, 
-              2, 
-              3, 
-              4,
-            ]
-
-4. **Trailing AND Leading Commas**: Allow both trailing (2) **and** leading (3) commas simultaneously in a single structure. ::
-
-      data Example a = ....
-                 deriving (
-                        , Functor
-                        , Foldable,
-                          Applicative,
-                          Traversable,
-                 )
-
-      ,f, g, h, :: Int -> Int
-
-      lst :: [Int]
-      lst = [ ,1, 2, 3, 4, 5, 6, 7, 8, ]
-
-
-Syntax
-~~~~~~~~~~~~
-
-The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** leading commas **without** repetitive commas:
-
-.. code:: abnf
-
-    ;-- export and import "lists" and sub-"lists"
-
-    exports ::= '(' [','] export1 ',' … ',' exportn [','] ')'            ;-- upd
-
-    export  ::= qvar
-        | qtycon [ ('..') | ( [','] cname1 ',' … ',' cnamen [','] ) ]  (n >= 0)  ;-- upd
-        | qtycls [ ('..') | ( [','] var1 ',' … ',' var_n [','] ) ]     (n >= 0)  ;-- upd
-        | 'module' modid
-        | ……
-   
-    impspec ::= '(' [','] import1 ',' … ',' importn [','] ')'     (n ≥ 0)   ;-- upd
-        | 'hiding' '(' [','] import1 ',' … ',' importn [','] ')'  (n ≥ 0)   ;-- upd
-
-    import  ::= qvar
-        | qtycon [ ('..') | ( [','] cname1 ',' … ',' cnamen [','] ) ]  (n >= 0)  ;-- upd
-        | qtycls [ ('..') | ( [','] var1 ',' … ',' var_n [','] ) ]     (n >= 0)  ;-- upd
-        | ……
-
-    ;-- deriving clauses
-
-    deriving ::= 'deriving' dclass
-            | 'deriving' '('  
-                 ( [','] dclass1 ',' … ',' dclassn [','] )              ;-- upd
-              ')'
-
-    ;-- default clauses
-
-    topdecl  ::= 'type' simpletype '=' type
-        | 'default' '(' [','] type1 ',' … ',' typen [','] ')'            ;-- upd
-        | 'class' [scontext '=>'] tycls tyvar [fundep] ['where' cdecls]
-        | ……
-
-.. code:: abnf
-
-    ;-- records and lists: expression, patterns, declaration
-
-    constr ::= con ['!'] atype1 … ['!'] atypek                 (arity con = k, k>=0)
-        | '(' btype | '!' atype) conop (btype | '!' atype ')'          (infix conop)
-        | con '{' [','] fielddecl1 ',' … ',' fielddecln [','] '}'     (records n>=0)  ;-- upd
-        | ……
-
-    fielddecl ::= vars '::' (type | '!' atype)
-
-    aexp ::= qvar                                                                   (variable)
-        | ……
-        | '[' [','] exp1 ',' … ',' expk [','] ']'                                (list, k ≥ 1)   ;-- upd
-        | '[' exp '|' [','] qual1 ',' … ',' qualn [','] ']'        (list comprehension, n ≥ 1)   ;-- upd
-        | ……
-        | qcon '{' [','] fbind1 ',' … ',' fbindn [','] '}'       (labeled construction, n ≥ 0)   ;-- upd
-        | aexp_(qcon) '{' [','] fbind1 ',' … ',' fbindn [','] '}'    (labeled update, n  ≥  1)   ;-- upd
-
-    apat ::= var [ '@' apat]                                                      (as pattern)
-        | ……
-        | '[' [','] pat1 ',' … ',' patk [','] ']'                        (list pattern, k ≥ 1)   ;-- upd
-        | ……
-        | qcon '{' [','] fpat1 ',' … ',' fpatk [','] '}'              (labeled pattern, k ≥ 0)   ;-- upd
-
-.. code:: abnf
-
-    ;-- fixity "lists", multi-name signatures
-
-    gendecl ::= vars '::' [context '=>'] type      (type signature)
-        | fixity [integer] ops                 (fixity declaration)
-        |                                       (empty declaration)
-
-    fixity ::= 'infixl' | 'infixr' | 'infix'
-
-    topdecl ::= 'type' simpletype '=' type            (simple type declaration)
-        | 'type' qtycons '::' type                     (multi-type declaration)
-        | 'pattern' pats '::' type ['where' pdecls]       (pattern declaration)
-        | ……
-
-    vars ::= [','] var1 ',' … ',' varn [',']           (n ≥ 1)   ;-- upd
-
-    ops  ::= [','] op1 ',' … ',' opn [',']             (n ≥ 1)   ;-- upd
-
-    pats ::= [','] pat1 ',' … ',' patn [',']           (n ≥ 1)   ;-- upd
-
-    qtycons ::= [','] qtycon1 ',' … ',' qtyconn [',']  (n ≥ 1)   ;-- upd
-
-
-    ;-- fundeps clauses & guard clauses
-
-    fundep ::= '|' [','] fdp1 ',' … ',' fdpn [',']       (n ≥ 1)   ;-- upd
-
-    fdp    ::= tyvar1 … tyvarn '->' tyvarm               (n ≥ 1)
-
-    guards ::= '|' [','] guard1 ',' … ',' guardn [',']   (n ≥ 1)   ;-- upd
-
-.. code:: abnf
-
-    ;-- pragmas
-
-    inlprgmdcl   ::= '{-#' 'INLINE' qvars '#-}'
-
-    noinlprgmdcl ::= '{-#' 'NOINLINE' qvars '#-}'
-
-    deprprgmdcl  ::= '{-#' 'DEPRECATED' qvars txt '#-}'
-
-    wrngprgmdcl  ::= '{-#' 'WARNING' qvars txt '#-}'
-
-    qvars   ::= [','] var1 ',' … ',' varn [',']          (n ≥ 1)  ;-- upd
-
-    specprgmdcl    ::= '{-#' 'SPECIALIZE' specs '#-}'
-
-    specinlprgmdcl ::= '{-#' 'SPECIALIZE' 'INLINE' specs '#-}'
-
-    specs ::= [','] spec1 ',' … ',' specn [',']          (n ≥ 1)  ;-- upd
-
-    spec  ::= vars [','] '::'  type                               ;-- upd
-
-    langprgmdcl ::= '{-#' 'LANGUAGE' lanexts '#-}'
-
-    lanexts     ::= [','] lext1 ',' … ',' lextn [',']    (n ≥ 1)  ;-- upd
-
-    cmplprgmdcl ::= '{-#' 'COMPLETE' cmplpats '#-}'
-
-    cmplpats    ::= [','] pat1 ',' … ',' patn [',']      (n ≥ 1)  ;-- upd
-
-    mingprgmdcl ::= '{-#' 'MINIMAL' mindef '#-}'
-
-    mindef ::= [','] var1 ',' … ',' varn [',']      ;-- upd
-        |  [','] '(' mindef ')' [',']               ;-- upd
-        |  mindef '|' mindef
-
-These changes allow extra commas in the all unordered structures:
-
-- module export "lists"
-- module export sub-"lists"
-- module import lists
-- module import sub-"lists"
+This proposal introduces the following syntactical changes to Haskell.
+
+Add a new language extension ``ExtraNonTupleCommas`` which allows both leading
+and trailing commas in **any** syntactic construct in which repetition with a comma is allowed, 
+**except** those that are delimited by round parentheses in terms or types (or constraints).
+
+Note that (because of the exception) this proposal does not cover tuple-like structures
+(including tuples, constraint tuples, class context siplified and non-simplified), 
+delimited with round parentheses.  
+For example ``(,,3,4)`` is not covered by the is proposal - rather, it is a tuple section 
+if extension ``-XTupleSections`` is on.
+
+More precisely, extension allows both leading and trailing commas 
+(but without repetitions commas) in the following structures:
+
+- module export "lists" and sub-"lists"
+- module import "lists" and sub-"lists"
 - deriving clauses
 - default clauses
-- list-comprehensions and literal list (expressions and patterns)
+- list-comprehensions 
+- literal list (expressions and patterns)
 - records in terms and types (declarations, patterns, constructions)
 - multi-name function signatures (including nested fields in records)
 - multi-name patten signatures
@@ -315,8 +113,138 @@ These changes allow extra commas in the all unordered structures:
   - ``SPECIALIZE INLINE``
   - ``WARNING``
 
-This proposal does not cover tuple-like structures, 
-such as tuples, unboxed tuples, constraint tuples and s-context.
+
+Syntax
+~~~~~~~~~~~~
+
+The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** leading commas **without** repetitive commas:
+
+Trailing Commas in module export and import lists (but not in sub-lists) 
+are already supported without this proposal.
+
+Grammar changes in export and import "lists" and sub-"lists":
+
+.. code:: abnf
+
+    exports ::= '(' [','] export1 ',' … ',' exportn [','] ')'                   ;-- upd
+
+    export  ::= qvar
+        | qtycon [ ('..') | ( [','] cname1 ',' … ',' cnamen [','] ) ]  (n ≥ 0)  ;-- upd
+        | qtycls [ ('..') | ( [','] var1 ',' … ',' var_n [','] ) ]     (n ≥ 0)  ;-- upd
+        | 'module' modid
+        | ……
+   
+    impspec ::= '(' [','] import1 ',' … ',' importn [','] ')'          (n ≥ 0)  ;-- upd
+        | 'hiding' '(' [','] import1 ',' … ',' importn [','] ')'       (n ≥ 0)  ;-- upd
+
+    import  ::= qvar
+        | qtycon [ ('..') | ( [','] cname1 ',' … ',' cnamen [','] ) ]  (n ≥ 0)  ;-- upd
+        | qtycls [ ('..') | ( [','] var1 ',' … ',' var_n [','] ) ]     (n ≥ 0)  ;-- upd
+        | ……
+
+Grammar changes in deriving and default clauses:
+
+.. code:: abnf
+
+    deriving ::= 'deriving' dclass
+            | 'deriving' '('  
+                 ( [','] dclass1 ',' … ',' dclassn [','] )               ;-- upd
+              ')'
+
+    topdecl  ::= 'type' simpletype '=' type
+        | 'default' '(' [','] type1 ',' … ',' typen [','] ')'            ;-- upd
+        | 'class' [scontext '=>'] tycls tyvar [fundep] ['where' cdecls]
+        | ……
+
+Grammar changes in records and lists, including expressions, patterns, declarations:
+
+.. code:: abnf
+
+    constr ::= con ['!'] atype1 … ['!'] atypek                          (arity con = k, k ≥ 0)
+        | '(' btype | '!' atype) conop (btype | '!' atype ')'                    (infix conop)
+        | con '{' [','] fielddecl1 ',' … ',' fielddecln [','] '}'              (records n ≥ 0)  ;-- upd
+        | ……
+
+    fielddecl ::= vars '::' (type | '!' atype)
+
+    aexp ::= qvar                                                                   (variable)
+        | ……
+        | '[' [','] exp1 ',' … ',' expk [','] ']'                                (list, k ≥ 1)  ;-- upd
+        | '[' exp '|' [','] qual1 ',' … ',' qualn [','] ']'        (list comprehension, n ≥ 1)  ;-- upd
+        | ……
+        | qcon '{' [','] fbind1 ',' … ',' fbindn [','] '}'       (labeled construction, n ≥ 0)  ;-- upd
+        | aexp_(qcon) '{' [','] fbind1 ',' … ',' fbindn [','] '}'    (labeled update, n  ≥  1)  ;-- upd
+
+    apat ::= var [ '@' apat]                                                      (as pattern)
+        | ……
+        | '[' [','] pat1 ',' … ',' patk [','] ']'                        (list pattern, k ≥ 1)  ;-- upd
+        | ……
+        | qcon '{' [','] fpat1 ',' … ',' fpatk [','] '}'              (labeled pattern, k ≥ 0)  ;-- upd
+
+Grammar changes in fixity "lists", multi-name signatures, fundeps & guard clauses:
+
+.. code:: abnf
+
+    gendecl ::= vars '::' [context '=>'] type                  (type signature)
+        | fixity [integer] ops                             (fixity declaration)
+        |                                                   (empty declaration)
+
+    fixity ::= 'infixl' | 'infixr' | 'infix'
+
+    topdecl ::= 'type' simpletype '=' type            (simple type declaration)
+        | 'type' qtycons '::' type                     (multi-type declaration)
+        | 'pattern' pats '::' type ['where' pdecls]       (pattern declaration)
+        | ……
+
+    vars ::= [','] var1 ',' … ',' varn [',']                   (n ≥ 1)  ;-- upd
+
+    ops  ::= [','] op1 ',' … ',' opn [',']                     (n ≥ 1)  ;-- upd
+
+    pats ::= [','] pat1 ',' … ',' patn [',']                   (n ≥ 1)  ;-- upd
+
+    qtycons ::= [','] qtycon1 ',' … ',' qtyconn [',']          (n ≥ 1)  ;-- upd
+
+    fundep  ::= '|' [','] fdp1 ',' … ',' fdpn [',']            (n ≥ 1)  ;-- upd
+
+    fdp     ::= tyvar1 … tyvarn '->' tyvarm                    (n ≥ 1)
+
+    guards  ::= '|' [','] guard1 ',' … ',' guardn [',']        (n ≥ 1)  ;-- upd
+
+Grammar changes in pragmas:
+
+.. code:: abnf
+
+    inlprgmdcl   ::= '{-#' 'INLINE' qvars '#-}'
+
+    noinlprgmdcl ::= '{-#' 'NOINLINE' qvars '#-}'
+
+    deprprgmdcl  ::= '{-#' 'DEPRECATED' qvars txt '#-}'
+
+    wrngprgmdcl  ::= '{-#' 'WARNING' qvars txt '#-}'
+
+    qvars ::= [','] var1 ',' … ',' varn [',']                   (n ≥ 1)  ;-- upd
+
+    specprgmdcl    ::= '{-#' 'SPECIALIZE' specs '#-}'
+
+    specinlprgmdcl ::= '{-#' 'SPECIALIZE' 'INLINE' specs '#-}'
+
+    specs ::= [','] spec1 ',' … ',' specn [',']                 (n ≥ 1)  ;-- upd
+
+    spec  ::= vars [','] '::'  type                                      ;-- upd
+
+    langprgmdcl ::= '{-#' 'LANGUAGE' lanexts '#-}'
+
+    lanexts     ::= [','] lext1 ',' … ',' lextn [',']           (n ≥ 1)  ;-- upd
+
+    cmplprgmdcl ::= '{-#' 'COMPLETE' cmplpats '#-}'
+
+    cmplpats    ::= [','] pat1 ',' … ',' patn [',']             (n ≥ 1)  ;-- upd
+
+    mingprgmdcl ::= '{-#' 'MINIMAL' mindef '#-}'
+
+    mindef ::= [','] var1 ',' … ',' varn [',']                  ;-- upd
+        |  [','] '(' mindef ')' [',']                           ;-- upd
+        |  mindef '|' mindef
 
 
 Examples
@@ -368,6 +296,26 @@ Examples
     )
 
 3. **Use a different style of coding**
+
+   With a leading comma, the Standard style for formatting a line with a comma before and a single element per line could be improved:
+   ::
+
+       -- style: comma before element
+       module Foo
+          ( -- * Types
+            , Foo
+            , Bar (
+                  , C
+                  , D
+                  )
+            , Baz
+            -- * Functions
+            , mkFoo
+            , mkBar
+            , mkBaz
+          ) where 
+
+   With a trailing comma, the alternative style for formatting a line with a comma after and a single element per line could be used:
    ::
 
        -- style: comma after element
@@ -385,27 +333,36 @@ Examples
             mkBaz,
           ) where 
 
-       -- style: comma before element
-       module Foo
-          ( -- * Types
-            , Foo
-            , Bar (
-                  , C
-                  , D
-                  )
-            , Baz
-            -- * Functions
-            , mkFoo
-            , mkBar
-            , mkBaz
-          ) where 
+       lst :: [Int]
+       lst = [ 
+              1, 
+              2, 
+              3, 
+              4,
+            ]
+
+   A mix of styles also could be used:
+   ::
+
+      -- mix of styles
+      data Example a = ....
+                 deriving (
+                        , Functor
+                        , Foldable,
+                          Applicative,
+                          Traversable,
+                 )
+
+      lst :: [Int]
+      lst = [ , 1, 2, 3, 4, 5, 6, 7, 8, ]
 
 4. **Pragmas**
    ::
 
      {-# LANGUAGE ExtraNonTupleCommas #-}
      {-# LANGUAGE Haskell2010,
-                  DeriveDataTypeable,
+                  StandaloneTypeSignatures,
+                  PatternSynonyms,
                   TupleSections,
      #-}
 
@@ -416,11 +373,39 @@ Examples
                     factorial :: Integer -> Integer,
      #-}
 
-     foo1, bar, baz, :: ....
+     foo1, bar, baz, :: forall a b. a -> a -> b -> b -> (a, b)
      {-# INLINE foo1, 
                 bar, 
                 baz, 
      #-}
+
+5. Different structures:
+   ::
+   			
+       data family URec a p
+
+       data instance URec (Ptr ()) p = UAddr   { uAddr#   :: Addr#,   }
+
+       data instance URec Char     p = UChar   { uChar#   :: Char#,   uInt# :: Int#, }
+
+       data instance URec Double   p = UDouble { , uDouble# :: Double#, uInt#, :: Int#,  uFloat#  :: Float#, }
+
+       infixr 5 (+), (-),
+
+       class C a b | a -> b, b -> a,  where ....
+
+       foo x y |  p x, q y, = expr
+
+       ,f, g, h, :: Int -> Int
+
+       type , Foo, Bar, Baz, :: Int -> Int
+
+       pattern , pat1, pat2, :: Int -> Int
+
+       default (
+                 Int,
+                 String,
+               )
 
 Effect and Interactions
 -----------------------
@@ -431,7 +416,7 @@ Tuple Sections
 This proposal purposefully dodges interacting with ``TupleSections`` extension.
 With ``TupleSection`` it is impossible to distinguish syntexically section ``(, a)`` from extra comma ``(, a)``.
 
-That's why this proposal do not cover tuples, unboxed tuples, constraint tuples and s-context.
+That's why this proposal do not cover tuples, unboxed tuples, constraint tuples, class context siplified and non-simplified.
 
 Standalone Type Signatures
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -442,6 +427,11 @@ Pattern Synonyms
 ~~~~~~~~~~~~~~~~
 
 We allow to use extra commas in multi-name patten signatures with ``PatternSynonyms`` extension.
+
+CPP
+~~~
+
+This proposal does not affects directly ``CPP`` extension. But it affects grammar syntax of pragmas since specific version of CHC.
 
 
 Costs and Drawbacks
@@ -483,15 +473,13 @@ However, the tension in the Haskell community was so high that a new attempt of 
 This proposal is an attempt to allow extra commas where everyone agrees to have them - 
 in all unordered structures (records, import and export "lists" and sublists, derivation and default clauses, multi-name signatures).
 
-Alternative adding extra commas
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Alternative rules for adding extra commas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. The main non-controversial alternative of **NonTuple** Extra Commas is **Unordered** Extra Commas (allowing extra commas in ordered structures)
    and **NonData** Extra Commas (allowing extra commas in non-data structures), which is in the same places as "Unordered" without records.
   
    Other alternatives includes **Im(Ex)port** Extra Commas and **Everywhere** Extra Commas.
-
-   The author didn't see anyone against extra commas in records.
 
 2. The proposal suggests to allow trailing and leading commas at the same time, but the committee could choose instead to only allow one of
    trailing or leading commas at the same time. This would be a bit stricter.
