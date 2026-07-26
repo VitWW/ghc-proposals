@@ -76,17 +76,17 @@ Proposed Change Specification
 This proposal introduces the following syntactical changes to Haskell.
 
 Add a new language extension ``ExtraNonTupleCommas`` which allows both leading
-and trailing commas in **any** syntactic construct in which repetition with a comma is allowed, 
+and trailing commas in **any** syntactic construct in which enumeration with a comma as separator is allowed, 
 **except** those that are delimited by round parentheses in terms or types (or constraints).
 
 Note that (because of the exception) this proposal does not cover tuple-like structures
-(including tuples, constraint tuples, class context siplified and non-simplified), 
+(including tuples, constraint tuples, class context simplified and non-simplified), 
 delimited with round parentheses.  
-For example ``(,,3,4)`` is not covered by the is proposal - rather, it is a tuple section 
+For example ``(,,3,4)`` is not covered by this proposal - rather, it is a tuple section 
 if extension ``-XTupleSections`` is on.
 
-More precisely, extension allows both leading and trailing commas 
-(but without repetitions commas) in the following structures:
+More precisely, this extension allows both leading and trailing commas 
+(but not repeating commas) in the following structures:
 
 - module export "lists" and sub-"lists"
 - module import "lists" and sub-"lists"
@@ -117,9 +117,9 @@ More precisely, extension allows both leading and trailing commas
 Syntax
 ~~~~~~~~~~~~
 
-The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** leading commas **without** repetitive commas:
+The formal grammar changes for ``ExtraNonTupleCommas`` for trailing **and** leading commas **without** adjacent commas:
 
-Trailing Commas in module export and import lists (but not in sub-lists) 
+Trailing commas in module export and import lists (but not in sub-lists) 
 are already supported without this proposal.
 
 Grammar changes in export and import "lists" and sub-"lists":
@@ -297,7 +297,7 @@ Examples
 
 3. **Use a different style of coding**
 
-   With a leading comma, the Standard style for formatting a line with a comma before and a single element per line could be improved:
+   With a leading comma, a standard style for formatting a line with a comma before and a single element per line can be improved:
    ::
 
        -- style: comma before element
@@ -315,7 +315,7 @@ Examples
             , mkBaz
           ) where 
 
-   With a trailing comma, the alternative style for formatting a line with a comma after and a single element per line could be used:
+   With a trailing comma, an alternative style for formatting a line with a comma after and a single element per line can be used:
    ::
 
        -- style: comma after element
@@ -421,17 +421,17 @@ That's why this proposal do not cover tuples, unboxed tuples, constraint tuples,
 Standalone Type Signatures
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We allow to use extra commas in multi-name type-synonym signatures with ``StandaloneTypeSignatures`` extension.
+We allow to use extra commas in multi-name type-synonym signatures with the ``StandaloneTypeSignatures`` extension.
 
 Pattern Synonyms
 ~~~~~~~~~~~~~~~~
 
-We allow to use extra commas in multi-name patten signatures with ``PatternSynonyms`` extension.
+We allow to use extra commas in multi-name pattern signatures with ``PatternSynonyms`` extension.
 
 CPP
 ~~~
 
-This proposal does not affects directly ``CPP`` extension. But it affects grammar syntax of pragmas since specific version of CHC.
+This proposal does not directly affect the ``CPP`` extension. But, it affects grammar syntax of pragmas since specific version of GHC.
 
 
 Costs and Drawbacks
@@ -476,7 +476,7 @@ in all unordered structures (records, import and export "lists" and sublists, de
 Alternative rules for adding extra commas
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. The main non-controversial alternative of **NonTuple** Extra Commas is **Unordered** Extra Commas (allowing extra commas in ordered structures)
+1. The main non-controversial alternative of **NonTuple** Extra Commas is **Unordered** Extra Commas (allowing extra commas in unordered structures)
    and **NonData** Extra Commas (allowing extra commas in non-data structures), which is in the same places as "Unordered" without records.
   
    Other alternatives includes **Im(Ex)port** Extra Commas and **Everywhere** Extra Commas.
@@ -493,10 +493,10 @@ Alternative rules for adding extra commas
 
       lead_AND_trail ::= [','] subList [',']
 
-3. The proposal suggests to allow extra commas **WITHOUT** repetitive commas, but the committee could choose instead to allow
-   extra commas **WITH** repetitive commas. This would be more lenient.
+3. The proposal suggests to allow extra commas **WITHOUT** adjacent commas, but the committee could choose instead to allow
+   extra commas **WITH** adjacent commas. This would be more lenient.
 
-   **Repetitive Commas**: Allow multiple commas instead of one in enumeration clauses where order does not matter:
+   **Adjacent Commas**: Allow multiple commas instead of one in enumeration clauses where order does not matter:
 
    - module export lists and sub-lists
    - module import lists and sub-lists
