@@ -86,7 +86,7 @@ For example ``(,,3,4)`` is not covered by this proposal - rather, it is a tuple 
 if extension ``-XTupleSections`` is on.
 
 More precisely, this extension allows both leading and trailing commas 
-(but not repeating commas) in the following structures:
+(but not adjacent commas) in the following structures:
 
 - module export "lists" and sub-"lists"
 - module import "lists" and sub-"lists"
@@ -496,13 +496,7 @@ Alternative rules for adding extra commas
 3. The proposal suggests to allow extra commas **WITHOUT** adjacent commas, but the committee could choose instead to allow
    extra commas **WITH** adjacent commas. This would be more lenient.
 
-   **Adjacent Commas**: Allow multiple commas instead of one in enumeration clauses where order does not matter:
-
-   - module export lists and sub-lists
-   - module import lists and sub-lists
-   - deriving and default clauses
-   - record-like occurrences (declarations, patterns, constructions)
-
+   **Adjacent Commas**: Allow multiple commas instead of one in enumeration clauses:
    ::
    
        module BarFoo
@@ -518,11 +512,9 @@ Alternative rules for adding extra commas
    The main benefit of the WITH-version is the maximum liberalisation of using extra commas. 
    Also, the more lenient version has almost the same parsing ::
 
-     lead_AND_trail_WITHOUT_repeats ::=  [','] { elem_i ',' } elem_max [','] 
+     lead_AND_trail_WITHOUT_adjacent ::=  [','] { elem_i ',' } elem_max [','] 
 
-     lead_AND_trail_WITH_repeats    ::=  {','} { elem_i ',' {','} } elem_max {','} 
-
-4. The proposal suggests to allow extra commas in code, but the committee could also allow or disallow extra commas in **pragmas**.
+     lead_AND_trail_WITH_adjacent    ::=  {','} { elem_i ',' {','} } elem_max {','} 
 
 
 Unresolved Questions
