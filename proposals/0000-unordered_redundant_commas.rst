@@ -390,7 +390,7 @@ Examples
 
        data instance URec Double   p = UDouble { , uDouble# :: Double#, uInt#, :: Int#,  uFloat#  :: Float#, }
 
-       infixr 5 (+), (-),
+       infixr 5 +, -,
 
        class C a b | a -> b, b -> a,  where ....
 
@@ -431,7 +431,9 @@ We allow to use extra commas in multi-name pattern signatures with ``PatternSyno
 CPP
 ~~~
 
-This proposal does not directly affect the ``CPP`` extension. But, it affects grammar syntax of pragmas since specific version of GHC.
+This proposal does not directly affect the ``CPP`` extension, 
+but it allows you to write fewer conditional CPP directives in code involving comma separated lists. 
+See the example in the motivation.
 
 
 Costs and Drawbacks
