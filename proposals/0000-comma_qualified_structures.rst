@@ -86,7 +86,7 @@ This proposal introduces the following syntactical changes to Haskell:
 
    The only difference between ``data``-qualified and ordinary tuples is:
 
-   - ordinary tuples don't allow extra commas, but allow tupling constructors and ``TupletSections`` (if values are not Constraint king)
+   - ordinary tuples don't allow extra commas, but allow tupling constructors and ``TupletSections`` (if values are not Constraint kind)
    
    - ``data``-qualified tuples allow extra commas, but ignore ``TupletSections``
    
@@ -140,9 +140,9 @@ Syntax for class content and class simplified content:
 .. code:: abnf
 
     topdecl := 'type' simpletype '=' type
-        | 'data' [context '=>'] simpletype ['=' constrs] [deriving]
-        | 'newtype' [context '=>'] simpletype '=' newconstr [deriving]
-        | 'class' [scontext '=>'] tycls tyvar ['where' cdecls]
+        | 'data'     [context '=>'] simpletype ['=' constrs] [deriving]
+        | 'newtype'  [context '=>'] simpletype '=' newconstr [deriving]
+        | 'class'    [scontext '=>'] tycls tyvar ['where' cdecls]
         | 'instance' [scontext '=>'] qtycls inst ['where' idecls]
         | ……
 
