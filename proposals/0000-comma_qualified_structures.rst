@@ -118,24 +118,26 @@ Syntax
 	  
 The formal grammar changes for ``DataTuples``:
 
-.. code:: abnf
+Syntax for tuples, unboxed tuples, constraint tuples:
 
-    ;-- tuples, unboxed tuples, constraint tuples
+.. code:: abnf
     
     atype := gtycon
-        | tyvar                                                 ;-- kmax = if 'data' then 1 else 2
-        | '('  [','] type1 ',' … ',' typek [','] ')'  ['data']       (tuple type, k ≥ kmax)  ;-- upd
-        | '(#' [','] type1 ',' … ',' typek [','] '#)' ['data']  (unboxed tuple type, k ≥ 1)  ;-- upd
+        | tyvar                                                  ;-- kmax = if 'data' then 1 else 2
+        | '('  [','] type1 ',' … ',' typek [','] ')'  ['data']   (tuple type, k ≥ kmax)              ;-- upd
+        | '(#' [','] type1 ',' … ',' typek [','] '#)' ['data']   (unboxed tuple type, k ≥ 1)         ;-- upd
         | ……
 
     gtycon := qtycon
-        | '(' ')' ['data']        (unit type)           ;-- upd
-        | '(#' '#)' ['data']      (unlifted unit type)  ;-- upd
-        | ……
+        | '('   ')' ['data']             (unit type)             ;-- upd
+        | '(#' '#)' ['data']             (unlifted unit type)    ;-- upd
+        | '[' ']'                        (list constructor)
+        | '(' '->' ')'                   (function constructor)
+        | '(' ',' {','} ')'              (tupling constructors)
+
+Syntax for class content and class simplified content:
 
 .. code:: abnf
-
-    ;-- class content
 
     topdecl := 'type' simpletype '=' type
         | 'data' [context '=>'] simpletype ['=' constrs] [deriving]
@@ -144,32 +146,32 @@ The formal grammar changes for ``DataTuples``:
         | 'instance' [scontext '=>'] qtycls inst ['where' idecls]
         | ……
 
-    gendecl := vars '::' [context '=>'] type      (type signature)
-        | fixity [integer] ops                (fixity declaration)
-        |                                      (empty declaration)
+    gendecl := vars '::' [context '=>'] type                    (type signature)
+        | fixity [integer] ops                                  (fixity declaration)
+        |                                                       (empty declaration)
 
-    exp := infixexp '::' [context '=>'] type   (expression type signature)
+    exp := infixexp '::' [context '=>'] type                    (expression type signature)
         | infixexp
 
     context := class
-        | '(' ',' cntclasses [','] ')' 'data'                   ;-- upd
-        | '(' cntclasses ((')' ['data']) | (',' ')' 'data'))    ;-- upd
+        | '(' ',' cntclasses [','] ')' 'data'                             ;-- upd
+        | '(' cntclasses ((')' ['data']) | (',' ')' 'data'))              ;-- upd
 
 
     scontext := simpleclass
-        | '(' ',' scntclasses [','] ')' 'data'                   ;-- upd
-        | '(' scntclasses ((')' ['data']) | (',' ')' 'data'))    ;-- upd
+        | '(' ',' scntclasses [','] ')' 'data'                            ;-- upd
+        | '(' scntclasses ((')' ['data']) | (',' ')' 'data'))             ;-- upd
 		
-    cntclasses := class1 ',' … ',' classn               (n ≥ 0)  ;-- upd
+    cntclasses := class1 ',' … ',' classn                        (n ≥ 0)  ;-- upd
 
     class := qtycls tyvar
-        | qtycls '(' tyvar atype1 … atypen ')'          (n ≥ 1)
+        | qtycls '(' tyvar atype1 … atypen ')'                   (n ≥ 1)
 
-    scntclasses := simpleclass1 ',' … ',' simpleclassn  (n ≥ 0)  ;-- upd
+    scntclasses := simpleclass1 ',' … ',' simpleclassn           (n ≥ 0)  ;-- upd
 
     simpleclass := qtycls tyvar
  
-    simpletype  := tycon tyvar1 … tyvark                (k ≥ 0)
+    simpletype  := tycon tyvar1 … tyvark                         (k ≥ 0)
 
 
 These changes allow extra commas in the all tuple-like structures:
@@ -178,8 +180,9 @@ These changes allow extra commas in the all tuple-like structures:
 - unboxed tuples
 - constraint tuples
 - class content
+- class simplified content
 
-This proposal does not cover tupling constructors for obvious reasons.
+This proposal does not cover multi-tupling constructors for obvious reasons.
 
 
 Examples
@@ -334,6 +337,7 @@ Thanks to all contributors of `Allow Trailing Comma in List Constructor Syntaxs
 
 Thanks to all contributors of `Extra NonTuple Commas 
 <https://github.com/ghc-proposals/ghc-proposals/issues/748>`__.
+
 
 Endorsements
 -------------
