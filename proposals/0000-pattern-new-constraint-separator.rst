@@ -10,7 +10,7 @@ New constraint separator for Pattern Synonyms
 .. sectnum::
 .. contents::
 
-We change constraint separator from ``=>`` to ``then`` in ``PatternSynonyms`` 
+We change the inner constraint separator from ``=>`` to ``then`` in ``PatternSynonyms`` 
 to avoid any conflicts with curried constraint syntax ::
 
     pattern P :: CReq then CProv => t1 -> t2 -> ... -> tN -> t
@@ -29,8 +29,8 @@ This syntax is very universal and curried and it looks promising.
 
 Unfortunately, the syntax on ``PatternSynonyms`` has a conflict syntax 
 with curried context/constraint,
-so it is required to change ``=>`` to ``then`` as constraint separator 
-to avid any future conflicts ::
+so it is required to change ``=>`` to ``then`` as inner constraint separator 
+to avoid any future conflicts ::
 
     pattern P :: CReq then CProv => t1 -> t2 -> ... -> tN -> t
 
@@ -38,12 +38,12 @@ to avid any future conflicts ::
 Proposed Change Specification
 -----------------------------
 
-Main idea is:  to make the syntax with ``=>`` separator 
+Main idea is:  to make the syntax with ``=>`` inner separator 
 deprecated and lately removed in signatures like this: ::
 
     pattern P :: CReq => CProv => t1 -> t2 -> ... -> tN -> t
 
-And change constraint separator from ``=>`` to ``then`` here ::
+And change inner constraint separator from ``=>`` to ``then`` here ::
 
     pattern P :: CReq then CProv => t1 -> t2 -> ... -> tN -> t
 
@@ -102,7 +102,7 @@ An example without requested constraint
 Effect and Interactions
 -----------------------
 
-This change ``=>`` to ``then`` keyword for constraint separator for pattern signatures
+This change ``=>`` to ``then`` keyword for inner constraint separator for pattern signatures
 on ``PatternSynonyms`` extension was made to avoid conflicts with Curried Context syntax.
 
 
