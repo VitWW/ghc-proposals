@@ -176,4 +176,4 @@ Endorsements
 Acknowledgments
 ---------------
 
-- `int-index <https://github.com/int-index>`_, for proposing this syntax in the pull discussion.
+- `int-index <https://github.com/int-index>`_, for proposing generalized syntax in the pull discussion.
