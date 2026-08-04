@@ -20,10 +20,13 @@ Motivation
 ----------
 
 Several ideas and proposals and feature requests appear to allow to write 
-Curried Constrains and Context in different places. 
+Curried Constrains and Context in different places: 
 
-For example ``C1 a => C2 a b => (C0 a, C0 b) =>`` is the same 
-as ``(C1 a, C2 a b, C0 a, C0 b) =>``
+- Proposal: `Curried Class Contexts <https://github.com/ghc-proposals/ghc-proposals/pull/666>`__
+- Feature Request: `Curried contexts in prefix GADT constructors <https://gitlab.haskell.org/ghc/ghc/-/work_items/27424>`__
+
+They suggest to see, for example that ``C1 a => C2 a b => (C0 a, C0 b)`` is the same 
+as ``(C1 a, C2 a b, C0 a, C0 b)``
 
 This syntax is very universal and curried and it looks promising.
 
