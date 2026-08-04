@@ -15,6 +15,9 @@ to avoid any conflicts with curried constraint syntax ::
 
     pattern P :: CReq then CProv => t1 -> t2 -> ... -> tN -> t
 
+And we also allow to write more general Request signatures: ::
+
+    pattern P :: SignReq then SignProv
 
 Motivation
 ----------
@@ -38,6 +41,8 @@ to avoid any future conflicts ::
 
     pattern P :: CReq then CProv => t1 -> t2 -> ... -> tN -> t
 
+    pattern P :: SignReq then SignProv
+
 
 Proposed Change Specification
 -----------------------------
@@ -51,6 +56,23 @@ And change inner constraint separator from ``=>`` to ``then`` here ::
 
     pattern P :: CReq then CProv => t1 -> t2 -> ... -> tN -> t
 
+This proposal does not address the following challenges:
+
+Currently it is not supported visible forall in the Req/Prov parts of the pattern signature at all.
+Function arguments in the Req part is also do not supported. Currently all function arguments are in the Prov part.
+
+In general, the Req/Prov split shouldn't be solely about constraints.
+We should be able to have any of the following both in the Req and the Prov parts of a patsyn:
+
+- Invisible forall ``forall (a::k).`` or ``forall {k}.``
+- Visible forall forall ``(a::k) ->``
+- Constraints ``(C a, D b) =>``
+- Function arguments ``T ->``
+
+So, we also allow to write more general Request ans Prov signatures ::
+
+    pattern P :: SignReq then SignProv
+
 
 Syntax
 ~~~~~~~~~~~~
@@ -59,12 +81,15 @@ The formal grammar changes for assigned a pattern type signatures:
 
 .. code:: abnf
 
-    topdecl ::= 'type' simpletype '=' type                 (simple type declaration)
-        | 'pattern' pats '::' cnstrtype ['where' pdecls]   (pattern declaration)
+    topdecl ::= 'type' simpletype '=' type                           (simple type declaration)
+        | 'pattern' pats '::' type ['where' pdecls]                      (pattern declaration)   --; upd
+        | 'pattern' pats '::' signreq 'then' signprov ['where' pdecls]   (pattern declaration)   --; new
         | ……
 
-    cnstrtype ::= [context 'then' context '=>'] type       --; upd
+    signreq  ::= ()                                              --; new
+        | { {forquantiferes} {context '=>'} } [type]             --; new
 
+    signprov ::= { {forquantiferes} {context '=>'} } type        --; new
 
 Examples
 --------
@@ -151,3 +176,4 @@ Endorsements
 Acknowledgments
 ---------------
 
+- `int-index <https://github.com/int-index>`_, for proposing this syntax in the pull discussion.
