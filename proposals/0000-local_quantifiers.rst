@@ -394,11 +394,12 @@ New alternative way to write data declarations:
 
   -- Example 1
   data T a where
-    MkT1 :: forargm a.                 T a
-    MkT2 :: forargm a.                 T (a,a)
-    MkT3 :: forargm a. forall b.                    T a
-    MkT4 :: forargm a. forall b. b ~ Int =>         T a
-    MkT5 :: forall c. forargm a. forall b. b ~ c => T a
+    MkT1 :: forargm a.                        T a
+    MkT2 :: forargm a.                        T (a,a)
+    MkT3 :: forargm a. forall b.              T a
+    MkT4 :: forargm a. forall b. b ~ Int =>   T a
+    -- with Modifiers extension
+    MkT5 :: forall c %forargm a b. b ~ c =>   T a
 
 
 Effect and Interactions
