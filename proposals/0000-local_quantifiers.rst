@@ -19,9 +19,11 @@ This proposal introduces local quantifiers into GHC, which grabs local type vari
 Motivation
 ----------
 
-With GHC's powerful type-level programming features, we need powerful abilities to explicitly bring local type variables into the scope. 
+With GHC's powerful type-level programming features, we need powerful abilities 
+to explicitly bring local type variables into the scope. 
 
-To write some trivial functions ``ScopedTypeVariables`` extension is needed (or ``TypeAbstractions``), which adds implicit rules for how to read type signatures!
+To write some trivial functions ``ScopedTypeVariables`` extension is needed (or ``TypeAbstractions``), 
+which adds implicit rules for how to read type signatures!
 
 And this is a bit unhandy to use implicit-only rules in a language that has a huge system of types.
 
@@ -30,15 +32,20 @@ Right now there are three kinds of scoped:
 * The scope local to each type signature
 ::
 
-  id :: forall a. a -> a -- 'a' is introduced and used only within this type signature
+  -- 'a' is introduced and used only within this type signature
+  res :: a -> a
+  --res :: forall a. a -> a
+  res x = x
 
 * The lexical scope around a type signature (modified by ``TypeAbstractions``)
 ::
 
   {-# LANGUAGE TypeAbstractions #-}
-  const :: forall a. a -> b -> a
+  const :: forall b. b -> c -> b
   const @a x = res where
-    res :: a -- uses 'a' from the lexical scope '@a'
+    -- uses 'a' from the lexical scope '@a'
+    res :: a
+  --res :: forterm a. a
     res = x
 
 * The magical / borrowed scope introduced by ``ScopedTypeVariables``
@@ -47,57 +54,97 @@ Right now there are three kinds of scoped:
   {-# LANGUAGE ScopedTypeVariables #-}
   const :: forall a. a -> b -> a
   const x = res where
-    res :: a -- uses 'a' from parent signature 'const :: forall a.'
+    -- uses 'a' from parent signature 'const :: forall a.'
+    res :: a
+  --res :: fortype a. a
     res = x
 
-Notice how the signature res :: ``a`` in 1 & 2 does not itself say where ``a`` comes from.
+Notice how the signature ``res :: a`` in (2) and (3) 
+does not itself say where ``a`` comes from.
 
-This is confusing because traditionally Haskell has made it optional to write "forall" in a signature, so it is unclear if ``res :: a`` means ``res :: forall a. a`` or the other thing (and it's not even possible to express what that the other meaning is currently!).
+This is confusing because traditionally Haskell has made it optional 
+to write "forall" in a signature, so it is unclear if ``res :: a`` means ``res :: forall a. a`` 
+or the other thing (and it's not even possible to express what 
+that the other meaning is currently!).
 
-This proposal says such uses of a should explicitly say they use '``a``' from somewhere else (exactly which-where) in the program.
+This proposal says such uses of a should explicitly say they use '``a``' 
+from somewhere else (exactly which-where) in the program.
 
-This Proposal suggests to add the **ForThis Quantifier**, **ForThat Quantifier**, **ForSame Quantifier** and **ForUsed Quantifier**, **ForInner Quantifier**, **ForNested Quantifier** which allow to write explicitly type signatures, which depends from internal or external type variables.
+This Proposal suggests to add the **ForTerm Quantifier**, **ForType Quantifier** 
+and **ForArgm Quantifier** which allow to write explicitly type signatures, 
+which depends from internal or external type variables.
 
-Explicitness is preferential in Haskell over implicitness. And this Proposal propose how to write local quantifiers explicitly! It does not aim to allow writing more programs, just to allow being more explicit about where type variables come from. Non-quantified type variable means that this variable is somehow-quantified.
+Explicitness is preferential in Haskell over implicitness. 
+And this Proposal propose how to write local quantifiers explicitly! 
+It does not aim to allow writing more programs, just to allow being more explicit 
+about where type variables come from. 
+Non-quantified type variable means that this variable is somehow-quantified.
 
-Just like ``ExplicitForall`` extension allow explicitly say exactly what this specific type variable is ``forall`` quantified, this Proposal allow to switch on ``LocalQuantifiers`` extension explicitly say exactly what this specific type variable is local quantified!
+Just like ``ExplicitForall`` extension allow explicitly say exactly what 
+this specific type variable is ``forall`` quantified, 
+this Proposal allow to switch on ``LocalQuantifiers`` extension explicitly say 
+exactly what this specific type variable is local quantified!
 
-An additional advantage is that adding such quantifiers makes signatures that have one-to-one correspondences with pure mathematical descriptions in Predicate Logic!
+An additional advantage is that adding such quantifiers makes signatures 
+that have one-to-one correspondences with pure mathematical descriptions in Predicate Logic!
  
-Main alternative is "Modern Scoped Type Variables" `#448`_ which was added into ``ScopedTypeVariables`` extension and ``TypeAbstractions`` extension.
+Main alternative is "Modern Scoped Type Variables" `#448`_ which was added into 
+``ScopedTypeVariables`` extension and ``TypeAbstractions`` extension.
 
-``ScopedTypeVariables`` is *de facto* **Implicit Local Quantifiers** : Implicit rules to add a local scope (or universal) quantifier to type variables if they are not explicitly quantified.
+``ScopedTypeVariables`` and partly ``TypeAbstractions`` are *de facto* **Implicit Local Quantifiers** : 
+Implicit rules to add a local scope (or universal) quantifier to type variables 
+if they are not explicitly quantified.
 
-Also Alternative is ``PartialTypeSignatures`` extension, with opposite philosophy: compiler infer type not for holes.
+Also Alternative is ``PartialTypeSignatures`` extension, 
+with opposite philosophy: compiler infer type not for holes.
 
 
 Rule (aka math-like proof)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-De facto Local Quantifiers are a special case of Existential Quantifier, which is known during compile time.
+De facto Local Quantifiers are a special case of Existential Quantifier 
+(Existential Unique Quantifier), which is known during compile time.
+
+Some people have doubt that this Proposal use correct theoretical term names.
+
+See more details in "Unresolved Questions" section.
+
+Author of this proposal use "Duck typing logic":
+
+- if it looks like "quantifier" then it is a "quantifier"
+
+- if it looks like "local quantifier" then it is a "local quantifier"
+
+- if it looks like "existential quantifier" then it is an "existential quantifier"
+
+- if it looks like "unique quantifier" then it is an "unique quantifier"
 
 **Math-like Proof:**
 
-All local scoped and parametric non-quantified type variables in Haskell are unique quantified (if not ``forall``-quantified) type variables.
+All local scoped and parametric non-quantified type variables in Haskell 
+are unique quantified (if not ``forall``-quantified) type variables.
 
 ::
 
   -- pseudo-haskell
   
   f1 :: ∀ a. [a] -> [a]
-  f1 (x:xs) = xs ++ [ x :: ∃₌₁ b. b ]
+  f1 (x:xs) = xs ++ [ x :: ∃! b. b ]
 
   f :: ∀ a. [a] -> [a]
   f xs = ys ++ ys
      where
-       ys :: ∃₌₁ b. [b]
+       ys :: ∃! b. [b]
        ys = reverse xs
 
-If we use mathematical iduction we could show that all "similar" cases could use unique quantifier.
+If we use mathematical induction we could show that all "similar" cases could use unique quantifier.
 
-Main benefit is that all local quantifiers are utilized by Haskell-renamer, so nothing is required to change in Core-language.
+Main benefit is that all local quantifiers are utilized by Haskell-renamer,
+so nothing is required to change in Core-language.
 
-Local Quantifiers are just explanation to GHC which external type variable they means.
+Local Quantifiers are just explanation to GHC which external type variable they means: 
+they indicates the binding site of the type variable (e.g. whether it was bound by a type abstraction, 
+a scoped type variable bound in a type signature, or somewhere else).
 
 
 Proposed Change Specification
@@ -107,107 +154,104 @@ Local Quantifiers "grab"(use) already existed type variables external to this si
 ::
 
   f :: forall a b. [a] -> [b] -> [(a, b)]
-  f @aa @bb xs ys  = zip (xs :: forthis aa. [aa]) yys
+  f @aa @bb xs ys  = zip (xs :: forterm aa. [aa]) yys
      where
-       yys :: forused _ b. [b]
+       yys :: fortype b. [b]
        yys = reverse ys
 
 
-By using ``for<local> a`` quantifier we ask do not create a new type variable ``forall a``, but use already existed external type variable ``a``.
+By using ``for<local> a`` quantifier we ask do not create a new type variable ``forall a``, 
+but use already existed external type variable ``a``.
 
-1. ForThis ``forthis`` quantifier pick type variable **by name** lifted from explicit **type-term** argument (``@tyterm``), not from **type**.
+1. ForTerm ``forterm`` quantifier pick type variable **by name** 
+   lifted from nearest explicit **type-term** argument 
+   (full or partial either ``@tyterm`` or ``(type a)`` or ``a`` in place which 
+   is responsible from ``forall ->`` quantifier), not from **type**.
 
-2. ForThat ``forthat`` quantifier pick type variable **by name** from ``class``, ``instance``, ``data``, ``type`` and ``newtype`` head type variable.
+2. ForType ``fortype`` quantifier pick type variable **by name** 
+   from explicit only signature declaration from nearest sibling ones, 
+   then from parent one ans so on, except siblings of top declaration signatures.
 
-3. ForSame ``forsame`` quantifier pick type variable **by name** from explicit only signature declaration.
+3. ForArgm ``forargm`` quantifier pick type variable **by name** 
+   from ``class``, ``instance``, ``data``, ``type`` and ``newtype`` head type variable.
+   
+   In ``data``, ``type`` and ``newtype`` signatures is also allowed to write "old way" - 
+   with ``forall`` quantifier without warning. Order of type variables has meaning.
 
-4. ForUsed ``forused`` quantifier pick type variable **by position** from ``forall`` in signature declarations (regardless if explicitly written or implicitly infered) in one-to-one corresponded order.
+   In ``class`` and ``instance`` signatures it is the only allowed quantifier - 
+   Order of type variables hasn't any meaning. 
+   But for future Backward Compatibility it is better to write first with head declaration order.
 
-5. ForInner ``forinner`` quantifier pick type variable **by position** from inner ``forall`` from Existential types and GADS-like types (regardless if explicitly written or implicitly infered) in one-to-one corresponded order.
 
-6. ForNested ``fornested`` quantifier pick type variable **by position** from signature high-ranked ``forall`` argument in one-to-one corresponded order (regardless if explicitly written or implicitly infered).
-
-Since ``forthis`` , ``forthat`` , ``forsame`` are quantifier by picking by name, they must use same **name** for type variable as external ones.
-
-Since ``forused`` , ``forinner`` , ``fornested`` are quantifier by picking by position, they must cold use **name** for type variable different from external ones.
-
-Local quantifier's type variable "grabs" type variables only from nearest parent signature.
-
-Local quantifier's type variable could "grabs" type variables only from nearest *grand*-parent signature - then we use coma ``,`` for this (except ``forthat`` quantifier).
-
-Local quantifier's type variable could "grabs" type variables only from nearest *grand-..-grand*-parent signature - then we use additional comas ``,`` for this.
-
-Local quantifier's which pick type variable *by position*:
-
-1. Could use pure wildcard ``_`` for unused variable. This means use ``for<local> _ _ a.`` instead of ``for<local> unused1 unused2 a.``
-
-2. Could omit all unused variables "righter" then last used one. This means use ``for<local> a.`` instead of ``for<local> a _ _ _.``
-
-3. Could omit all variables if all of them are unused from some signature. This means use ``for<local> ,, a.`` instead of ``for<local> _ _ _, _ _, a.``
-
-4. ``forused`` must use semicolon ``;`` for shifted ``forall`` to omit *term* argument. This means write ``forused _ ; b.`` if signature is ``f :: forall a. a -> forall b. b -> ...``
-
-5. ``forinner`` and ``fornested`` must use semicolon ``;`` for shifted ``forall`` to omit *type* argument. This means write ``for{local} _ ; b.`` if signature is ``f :: forall a. a -> forall b. T b -> ...``
-
-Since ForSame Quantifier uses explicit signature declaration only and ignore shifted ``forall`` , we mark ``forsame`` as **DEPRECATED**. But this quantifier is useful for future of ``ScopedTypeVariables`` extension
-
+Since ``forterm`` , ``fortype`` , ``forargm`` are quantifier by picking by name, 
+they must use same **name** for type variable as external ones.
 
 Extension
 ~~~~~~~~~~~~
 
-Introduce a new extension ``-XLocalQuantifiers`` .
+Introduce a new extension ``LocalQuantifiers`` .
 
-With ``-XLocalQuantifiers`` words ``forthis``, ``forthat``, ``forsame``, ``forused``, ``forinner``, ``fornested`` becomes keywords in types.
+With ``LocalQuantifiers`` words ``forterm``, ``fortype``, ``forargm``  becomes keywords in types.
 
 Syntax
 ~~~~~~
 
 Syntax for local quantifiers has a simple form.
 
-::
+.. code:: abnf
 
-  type ::= ......
-       | 'forthat'   { tyvar } tyvar '.'
-       | 'forthis'   { ',' | tyVar } tyVar '.'
-       | 'forsame'   { ',' | tyVar } tyVar '.'              -- DEPRECATED
-       | 'forused'   { ';' | ',' | tyVar } tyVar '.'
-       | 'forinner'  { ';' | ',' | tyVar } tyVar '.'
-       | 'fornested' { ';' | ',' | tyVar } tyVar '.'
+  quantifiers ::= { quantifier }
+
+  quantifier  ::=
+    | 'forall'  { tyvar } tyvar ( '.' | '->' )
+    | 'forargm' { tyvar } tyvar   '.'
+    | 'forterm' { tyvar } tyvar   '.'
+    | 'fortype' { tyvar } tyvar   '.'
+
+
+With ``-XModifiers``, introduce modifier syntax on forall type variables if we don't want to mix quantifiers
+
+.. code:: abnf
+
+  quantifier ::= ......
+       | 'forall' { modifiers tyvar } modifiers tyvar ( '.' | '->' )
+
+
+where ``%forargm``, ``%forterm`` and ``%fortype`` are modifiers.
+
 
 Every local quantifier is utilized by the Haskell renamer, so no changes are required for the Core Language.
 
 Examples
 --------
 
-Almost every example from  "Modern Scoped Type Variables" `#448`_ could be used with local quantifiers
-
-ForThis Quantifier
+ForTerm Quantifier
 ~~~~~~~~~~~~~~~~~~
 
-Examples uses ForThis Quantifier
+Examples uses ForTerm Quantifier
 ::
 
   -- Example 1
   data T = forall a. MkT [a] (a -> Int)
 			
   f :: T -> [Int]
-  f (MkT @a xs f) = let mf :: forthis a. [a] -> [Int]
+  f (MkT @a xs f) = let mf :: forterm a. [a] -> [Int]
                         mf = map f
                     in mf xs
 
   -- Example 2
   foo :: forall b. Maybe b -> ()
-  foo @a (_ :: forthis a. Maybe a) = ()
+  foo @a (_ :: forterm a. Maybe a) = ()
 
   -- Example 3
   bar :: forall b. Maybe b -> ()
-  bar (Just @a (_ :: forthis a. a)) = ()
+  bar (Just @a (_ :: forterm a. a)) = ()
 
   -- Example 4
-  baz :: forall b. b ~ () -> ()
+  baz :: forall c. c ~ () -> ()
   baz @b () = ()
     where
-      () :: forthis b. b = ()
+      () :: forterm b. b = ()
 	  
   -- Example 5
   data T a where
@@ -219,270 +263,189 @@ Examples uses ForThis Quantifier
 
   foo :: T (Int, Int) -> ()
   foo (MkT1 @(Int,Int))  = ()
-  foo (MkT2 @x)          = (() :: forthis x. x ~ Int => ())
-  foo (MkT3 @_ @x)       = (() :: forthis x. x ~ x => ())
-  foo (MkT4 @_ @x)       = (() :: forthis x. x ~ Int => ())
+  foo (MkT2 @x)          = (() :: forterm x. x ~ Int => ())
+  foo (MkT3 @_ @x)       = (() :: forterm x. x ~ x => ())
+  foo (MkT4 @_ @x)       = (() :: forterm x. x ~ Int => ())
 
   -- Example 6
   f :: Maybe Int -> Int
-  f (Nothing @a) = (4 :: forthis a. a)
-  f (Just @a _)  = (5 :: forthis a. a)
+  f (Nothing @a) = (4 :: forterm a. a)
+  f (Just @a _)  = (5 :: forterm a. a)
   
   -- Example 6
   g :: forall a. a -> a
-  g @a x = (x :: forthis a. a)
+  g @a x = (x :: forterm a. a)
 
   -- Example 7  
-  f8 @a (x :: forthis a. a) = x    -- accepted
+  
+  -- accepted
+  f8 @a (x :: forterm a. a) = x 
 
-  f2 @a True  x (y :: forthis a. a) = x
-  f2 @_ False x y                   = y   -- accepted
+  -- accepted
+  f2 @a True  x (y :: forterm a. a) = x
+  f2 @_ False x y                   = y
 
-  f3 @a True  x (y :: forthis a. a) = x
-  f3    False x y                   = y   -- rejected: too confusing to have different type variable bindings
+  -- rejected: too confusing to have different type variable bindings
+  f3 @a True  x (y :: forterm a. a) = x
+  f3    False x y                   = y
 
+  -- accepted: the type signature allows us to do this
   f4 :: Bool -> a -> a -> a
-  f4 @a True  x (y :: forthis a. a) = x
-  f4    False x y                   = y   -- accepted: the type signature allows us to do this
+  f4 @a True  x (y :: forterm a. a) = x
+  f4    False x y                   = y
 
+  -- accepted
   f5 :: Bool -> forall a. a -> a -> a
-  f5 True @a x (y :: forthis a. a) = x
-  f5 False   x y                   = y    -- accepted
+  f5 True @a x (y :: forterm a. a) = x
+  f5 False   x y                   = y
   
   -- Example 8
   id :: forall a. a -> a
-  id @t x = x :: forthis t. t
+  id @t x = x :: forterm t. t
 
+ForType Quantifier
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-ForThat Quantifier
+Examples uses ForType Quantifier
+::
+
+  -- Example 1
+  f1 :: forall a. [a] -> [a]
+  f1 (x:xs) = xs ++ [ x :: fortype  a. a ]
+  
+  -- Example 2
+  f2 :: forall a. [a] -> [a]
+  f2 (x:xs) = xs ++ [ x :: fortype a. a ]
+
+  -- Example 3
+  f :: [a] -> [b] -> [(a, b)]  
+  f xs ys = zip (xs :: fortype a. [a]) yys 
+     where
+       yys :: fortype b. [b]
+       yys = reverse ys
+
+  -- Example 4
+  f :: forall a b c. [a] -> [b] -> c -> ....
+  f xs ys z = .....
+    where
+      zzs :: fortype c. [c]
+      zzs = [z, z, z] 
+      yys :: fortype b. [b]
+      yys = reverse ys
+      x2 :: forall d. d -> ....
+      x2 t = ...
+        where
+          x3 :: fortype a. a
+          x3 = head xs
+          xt :: fortype a d. (d, a)
+          xt = (t, x3)
+
+ForArgm Quantifier
 ~~~~~~~~~~~~~~~~~~
 
-Examples uses ForThat Quantifier
+Examples uses ForArgm Quantifier
 ::
 
   -- Example 1
   class C a where
-    foo :: forthat a. forall b. b -> a -> (a, [b])
+    foo :: forargm a. forall b. b -> a -> (a, [b])
 
   -- Example 2
   class Trans t where
-    lift :: forthat t. forall m. Monad m => m a -> (t m) a
+    lift :: forargm t. forall m. Monad m => m a -> (t m) a
 	
   -- Example 3
   class C a where
-    op :: forthat a. [a] -> a
+    op :: forargm a. [a] -> a
   
-    op xs = let ys:: forthat a. [a]
+    op xs = let ys:: forargm a. [a]
                 ys = reverse xs
             in
             head ys
 			
   -- Example 4
   instance C b => C [b] where
-    op xs = reverse (head (xs :: forthat b. [[b]]))
+    op xs = reverse (head (xs :: forargm b. [[b]]))
 
   -- Example 5	
   class D a where
-    m :: forthat a. a -> a
+    m :: forargm a. a -> a
 
   instance Num a => D [a] where
-    m :: forthat a. [a] -> [a]
+    m :: forargm a. [a] -> [a]
     m x = map (*2) x
 	
   -- Example 6
   class Collects e ce | ce -> e where
-    empty  :: forthat e. ce
-    insert :: forthat e ce. e -> ce -> ce
-    member :: forthat e ce. e -> ce -> Bool
+    empty  :: forargm ce. ce
+    insert :: forargm e ce. e -> ce -> ce
+    member :: forargm e ce. e -> ce -> Bool
 
 
-Example uses both ForThat and ForThis Quantifiers:
+Example uses both ForArg and ForTerm Quantifiers:
 ::
 
   type C :: forall i. (i -> i -> i) -> Constraint
   class C @i a where
-    p :: forthat a. forthis i. P a i
-
-ForInner Quantifier
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Examples uses ForInner Quantifier
+    p :: forargm a. forterm i. P a i
+  
+New alternative way to write data declarations:
 ::
 
   -- Example 1
-  type Foo = forall b. [b] -> [b]
-
-  f3 :: Foo
-  f3 (x:xs) = xs ++ [ x :: forinner b. b ]
-  
-  -- Example 2
-  data T = forall a. MkT [a]
-
-  k :: T -> T
-  k (MkT [t :: forinner a. a]) =
-      MkT t3
-    where
-      (t3 :: forinner a. [a]) = [t,t,t]
-	  
-  -- Example 3
-  data T = forall a. MkT [a] (a -> Int)
-
-  f :: T -> [Int]
-  f (MkT (xs :: forinner a. [a]) f) = let mf :: forinner a. [a] -> [Int]
-                              mf = map f
-                          in mf xs
-  
-  -- Example 4
-  bar :: forall b. Maybe b -> ()
-  bar (Just @a (_ :: forinner b. b)) = ()
-
-  -- Example 5
-  f :: Maybe Int -> Int
-  f Nothing   = (4 :: forinner a. a)
-  f (Just _)  = (5 :: forinner a. a)
-
-ForNested Quantifier
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Nested local variables are not part of Modern Local Scope Variables, but was a part of previous Old Local Scope Variables.
-
-Examples uses ForInner Quantifier.
-::
-
-  -- Example 1
-  type family F a
-
-  higherRankF :: (forall a. F a -> F a) -> ...
-
-  usage = higherRankF (\ (x :: fornested a. F a) -> ...)
-  
-  
-ForUsed Quantifier
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Examples uses ForUsed Quantifier
-::
-
-  -- Example 1
-  f1 :: forall a. [a] -> [a]
-  f1 (x:xs) = xs ++ [ x :: forused a. a ]   -- OK
-
-  f = runST ( (op >>= \(x :: forused s. STRef s Int) -> g x) :: forall s. ST s Bool )
-
-  g (x:: forused a. a) = x
-  
-  -- Example 2
-  f1 :: forall a. [a] -> [a]
-  f1 (x:xs) = xs ++ [ x :: forused b. b ]
-
-  -- Example 3
-  f :: [a] -> [b] -> [(a, b)]      -- no explicit forall: we could use forused with a, b
-  f xs ys = zip (xs :: forused a. [a]) yys 
-     where
-       yys :: forused _ b. [b]
-       yys = reverse ys
-
-  -- Example 4
-  f :: forall a b c. [a] -> [b] -> c -> ....
-  f xs ys z = .....
-    where
-      zzs :: forused _ _ c. [c]
-      zzs = [z, z, z] 
-      yys :: forused _ b. [b]
-      yys = reverse ys
-      x2 :: forall a. a -> ....
-      x2 t = ...
-        where
-          x3 :: forused , a. a
-          x3 = head xs
-          xt :: forused a2, a1. (a2, a1)
-          xt = (t, x3)
-   
-  -- Example 5
-  f2 :: forall a. a -> forall b. [b] -> [b]
-  f2 _ (x:xs) = xs ++ [ x :: forused _ ; b. b ]
+  data T a where
+    MkT1 :: forargm a.                 T a
+    MkT2 :: forargm a.                 T (a,a)
+    MkT3 :: forargm a. forall b.                    T a
+    MkT4 :: forargm a. forall b. b ~ Int =>         T a
+    MkT5 :: forall c. forargm a. forall b. b ~ c => T a
 
 
-ForSame Quantifier
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Examples uses ForSame Quantifier
-::
-
-  -- Example 1
-  f1 :: forall a. [a] -> [a]
-  f1 (x:xs) = xs ++ [ x :: forsame  a. a ]
-  
-  -- Example 2
-  f2 :: forall a. [a] -> [a]
-  f2 (x:xs) = xs ++ [ x :: forsame a. a ]
-
-  -- Example 3
-  f :: [a] -> [b] -> [(a, b)]  
-  f xs ys = zip (xs :: forsame a. [a]) yys 
-     where
-       yys :: forsame b. [b]
-       yys = reverse ys
-
-  -- Example 4
-  f :: forall a b c. [a] -> [b] -> c -> ....
-  f xs ys z = .....
-    where
-      zzs :: forsame c. [c]
-      zzs = [z, z, z] 
-      yys :: forsame b. [b]
-      yys = reverse ys
-      x2 :: forall d. d -> ....
-      x2 t = ...
-        where
-          x3 :: forsame , a. a
-          x3 = head xs
-          xt :: forsame d, a. (d, a)
-          xt = (t, x3)
-  
- 
 Effect and Interactions
 -----------------------
+
+This proposals affect a lot of extensions, but mostly with "natural" way.
 
 UnicodeSyntax
 ~~~~~~~~~~~~~~
 
-We wish to preserve ``∃`` (There Exists, U+2203) symbol for universal existential quantifier, so it is proposed to add 2 symbols (``∃`` + ``<something>``) to represent local quantifiers.
+We wish to preserve ``∃`` (There Exists, U+2203) symbol for universal existential quantifier, 
+so it is proposed to add 2 symbols (``∃`` + ``<something>``) to represent local quantifiers.
 
-1. ``∃†`` could represent ``forthis`` quantifier (There Exists, U+2203) + (Dagger, U+2020).
+1. ``∃@`` could represent ``forterm`` quantifier (There Exists, U+2203) + (Commercial At, U+0040).
+   
+   Maybe for not confusing with "at"-symbol it is better to allow (Fullwidth Commercial At, U+FF20) - ``∃＠``
 
-2. ``∃§`` could represent ``forthat`` quantifier (There Exists, U+2203) + (Section Sign, U+00A7).
+2. ``∃≡`` could represent ``fortype`` quantifier (There Exists, U+2203) + (Identical To, U+2261).
 
-3. ``∃∝`` could represent ``forsame`` quantifier (There Exists, U+2203) + (Proportional To, U+221D).
+3. ``∃≝`` could represent ``forargm`` quantifier (There Exists, U+2203) + (Equal to By Definition, U+2254).
 
-4. ``∃∴`` could represent ``forused`` quantifier (There Exists, U+2203) + (Therefore, U+2234).
 
-5. ``∃☈`` could represent ``forinner`` quantifier (There Exists, U+2203) + (Thunderstorm, U+2608).
-
-6. ``∃∂`` could represent ``fornested`` quantifier (There Exists, U+2203) + (Partial Differential, U+2202).
+Also it affects modifiers - ``%∃＠``, ``%∃≡`` and ``%∃≝``.
 
 Examples
 ::
 
   id :: ∀ a. a -> a
-  id @t x = x :: ∃† t. t
+  id @t x = x :: ∃＠ t. t
 
   f1 :: ∀ a b. [a] -> [b] -> [(a, b)]
-  f1 @aa @bb xs ys  = zip (xs :: ∃† aa. [aa]) yys
+  f1 @aa @bb xs ys  = zip (xs :: ∃＠ aa. [aa]) yys
      where
-       yys :: ∃∴ _ b. [b]
+       yys :: ∃≡ b. [b]
        yys = reverse ys
 
-  f2 :: Maybe Int -> Int
-  f2 Nothing   = (4 :: ∃☈ a. a)
-  f2 (Just _)  = (5 :: ∃☈ a. a)
-
   class D a where
-    m :: ∃§ a. a -> a
+    m :: ∃≝ a. a -> a
 
   instance Num a => D [a] where
-    m :: ∃§ a. [a] -> [a]
+    m :: ∃≝ a. [a] -> [a]
     m x = map (*2) x
+
+Modifiers
+~~~~~~~~~
+
+We allow to write modifiers near type variable at forall-qualifier.
 
 ScopedTypeVariables
 ~~~~~~~~~~~~~~~~~~~
@@ -491,15 +454,30 @@ ScopedTypeVariables
 
 But we could reuse part of searching algorithms from ``ScopedTypeVariables`` algorithms.
 
+ScopedTypeAbstractions
+~~~~~~~~~~~~~~~~~~~~~~
+
+``TypeAbstractions`` extension ignores local quantified variables.
+
+But it has build lexical scoping searching rules for unquantified type variables, 
+which it is better to segregate later into the new ``ScopedTypeAbstractions`` extension.
+
 Visible ForAll and ForEach
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Since local quantifiers just use already existing type variables, there is no need to be used as visible or as unerased quantifiers.
+Since local quantifiers just use already existing type variables, 
+there is no need to be used as visible or as unerased quantifiers.
 
 NoImplicitForAll
 ~~~~~~~~~~~~~~~~
 
 This Proposal do not contradicts ``NoImplicitForAll`` extension.
+
+CurriedQuantifiers
+~~~~~~~~~~~~~~~~~~
+
+This proposal is better to use with curried / nested quantifiers (foralls) features.
+
 
 Costs and Drawbacks
 -------------------
@@ -510,33 +488,16 @@ We expect the implementation and maintenance costs of ``LocalQuantifiers`` has m
 Alternatives
 ------------
 
-Main alternative is "Modern Scoped Type Variables" `#448`_ (``ScopedTypeVariables`` extension), but also ``TypeAbstractions`` and ``PartialTypeSignatures``.
+Main alternative is "Modern Scoped Type Variables" `#448`_ (``ScopedTypeVariables`` extension), 
+but also ``TypeAbstractions`` and ``PartialTypeSignatures``.
 
 Alternative keywords
 ~~~~~~~~~~~~~~~~~~~~
 
-We could choose differen keywords instead of proposed latin and unicode keywords.
+We could choose different keywords instead of proposed latin and unicode keywords.
 
-Howevwer, the template ``for<local>`` and ``∃<something>`` are welcomed.
+However, the template ``for<local>`` and ``∃<something>`` are welcomed.
 
-Freedom of choice for ForThat
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There are two ways to add ``forthat`` quantifier:
-
-- to use it in the head of declaration: ::
-
-   data forthat a. Maybe a  where
-        Nothing :: forall a. Maybe a
-        Just    :: forall a. a -> Maybe a
-
-- to use it in the body of declaration: ::
-
-   class forall a. Num a  where
-        (+) :: forthat a. a -> a - > a
-        (*) :: forthat a. a -> a - > a
-
-Second choice looks more "natural".
 
 Backward Compatibility
 ----------------------
@@ -547,41 +508,122 @@ This proposal is fully backward compatible.
 Unresolved Questions
 --------------------
 
-ForNew
-~~~~~~~
+Most unresolved question are theoretical: how to to call right local quantifiers.
+
+Is it Quantifier? Is it Existential? Is it Unique?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some people think, that it it wrong naming: maybe it is more carefully 
+to call "local quantifier" as either "pseudo-quantifier" or "quasi-quantifier".
+
+Also some people think, that is wrong naming: 
+either it call "existential quantifier" or "unique quantifier".
+
+1) `Adam Gundry <https://github.com/adamgundry>`__ said:
+     
+    I don't think you are using the term "quantifier" as it is normally 
+    understood in logic or type theory, and it is difficult 
+    to unpack what you mean.
+
+    I think the question of the relationship of this proposal to 
+    (unique) existential quantification is a red herring. 
+    The core idea of the proposal seems to be that a "local quantifier" 
+    is an annotation on a type signature that does not itself bind a type variable 
+    or quantify over types, but rather indicates the binding site of the type variable 
+    (e.g. whether it was bound by a type abstraction, a scoped type variable 
+    bound in a type signature, or somewhere else). 
+    This does not increase expressivity, but allows the programmer to be more explicit.
+
+2) `Jaro <https://github.com/noughtmare>`__ said:
+
+    Here's a proof in Agda that ``∃! b. Bool → b`` is false:
+
+    ::
+	
+      open import Relation.Nullary.Negation
+      open import Data.Product
+      open import Data.Bool
+      open import Relation.Binary.PropositionalEquality
+      open import Data.Nat
+
+      postulate Bool≠ℕ : ¬ (Bool ≡ ℕ)
+
+      foo : Bool → Bool
+      foo x = x
+
+      bar : Bool → ℕ
+      bar false = zero
+      bar true = suc zero
+
+      qux : ¬ (∃! _≡_ λ b → Bool → b)
+      qux (A , this , that≡this) with that≡this foo | that≡this bar
+      ... | refl | Bool≡ℕ = Bool≠ℕ Bool≡ℕ
+	  
+
+    I needed to postulate that Bool is not ℕ because I think that is a bit hard to prove.
+	 
+    ...
+    The "truth" of a type in a functional language is, by 
+    the Curry-Howard correspondence, whether it is inhabited or not.
+	 
+    ...
+    The most confusing part seems to be the lambda. 
+    You should really read it more like ``∃![ b ] (Bool → b)``. 
+    It's just that the lambda is the only way to bind new variables 
+    and ``∃!`` needs to bind the ``b`` variable in this case.
+	 
+    (The ``_≡_`` argument is just for saying up to which kind 
+    of equality we want it to be unique. 
+    In this case it is propositional equality which is the built-in equality in Agda. 
+    We could instead use isomorphisms on types as our notion of equality, 
+    which would also allow us to prove that ``Bool`` is not ``ℕ`` more easily.)
+	 
+    If I wanted to say that there is a unique function 
+    then I'd write that something like this:
+	 
+    ::
+	
+      ¬ (∃! {A = Bool → ?} _≡_ λ f → ⊤)
+
+3) `Tom Ellis <https://github.com/tomjaguarpaw>`__ said:
+
+    I think that this is correct: ``∃!`` doesn't correspond to 
+    uniqueness quantification in a Curry Howard interpretation. 
+    In fact I'm not sure that ``∃! b. Bool -> b`` is a type at all. 
+    Rather it seems to be a property of a type ``t``, 
+    specifically ``∃! b. t`` is satisfied by types ``t'`` for which 
+    there exists a type ``s`` such that ``t[b -> s] = t'``.
+
+ForWhich
+~~~~~~~~~
 
 It is unclear which local quantifier should be used in next example
 ::
 
     data Proxy a = P
 
-    g2 :: Proxy (Nothing @(a, a)) -> ()
+    g2 :: forall a. Proxy (Nothing @(a, a)) -> ()
     g2 (P @(Nothing :: for??? t. Maybe (t, t))) = ()
 
 
-We could reuse ``forthat`` for this case or to add a new special quantifier ``fornew``.
+Is it any? Or it is more correct to describe it as "as-pattern" in signatures at ``KindSignatures`` for that?
 
-Or maybe ``forused t.`` is enough.
-
-
-Future possibilities
---------------------
-
-ScopedTypeVariables
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-In future we could rewrite ``ScopedTypeVariables`` extension in terms of local-scoped quantifiers.
-
-Type in terms
-~~~~~~~~~~~~~~~~~~
-
-Right now Haskell doesn't support types in terms. If it is allowed, we could add ``forterm`` local quantifier.
 ::
 
-  t = Int
-  foo (x :: forterm t. t) = 0
+    g2 (P @(Nothing :: Maybe ( t@Type , t))) = ()
+
+This proposal do not cover this example.
+
 
 Implementation Plan
 -------------------
 
-It is unclear.
+Unclear. The author cannot implement this proposal.
+
+
+Acknowledgments
+---------------
+
+
+Endorsements
+------------
