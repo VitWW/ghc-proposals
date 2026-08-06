@@ -411,36 +411,36 @@ UnicodeSyntax
 ~~~~~~~~~~~~~~
 
 We wish to preserve ``∃`` (There Exists, U+2203) symbol for universal existential quantifier, 
-so it is proposed to add 2 symbols (``∃`` + ``<something>``) to represent local quantifiers.
+so it is proposed to add 3 symbols (``∃!`` + ``<something>``) to represent local quantifiers.
 
-1. ``∃@`` could represent ``forterm`` quantifier (There Exists, U+2203) + (Commercial At, U+0040).
+1. ``∃!@`` could represent ``forterm`` quantifier (There Exists, U+2203) + (Commercial At, U+0040).
    
-   Maybe for not confusing with "at"-symbol it is better to allow (Fullwidth Commercial At, U+FF20) - ``∃＠``
+   Maybe for not confusing with "at"-symbol it is better to allow (Fullwidth Commercial At, U+FF20) - ``∃!＠``
 
-2. ``∃≡`` could represent ``fortype`` quantifier (There Exists, U+2203) + (Identical To, U+2261).
+2. ``∃!≡`` could represent ``fortype`` quantifier (There Exists, U+2203) + (Identical To, U+2261).
 
-3. ``∃≝`` could represent ``forargm`` quantifier (There Exists, U+2203) + (Equal to By Definition, U+2254).
+3. ``∃!≝`` could represent ``forargm`` quantifier (There Exists, U+2203) + (Equal to By Definition, U+2254).
 
 
-Also it affects modifiers - ``%∃＠``, ``%∃≡`` and ``%∃≝``.
+Also it affects modifiers - ``%∃!＠``, ``%∃!≡`` and ``%∃!≝``.
 
 Examples
 ::
 
   id :: ∀ a. a -> a
-  id @t x = x :: ∃＠ t. t
+  id @t x = x :: ∃!＠ t. t
 
   f1 :: ∀ a b. [a] -> [b] -> [(a, b)]
-  f1 @aa @bb xs ys  = zip (xs :: ∃＠ aa. [aa]) yys
+  f1 @aa @bb xs ys  = zip (xs :: ∃!＠ aa. [aa]) yys
      where
-       yys :: ∃≡ b. [b]
+       yys :: ∃!≡ b. [b]
        yys = reverse ys
 
   class D a where
-    m :: ∃≝ a. a -> a
+    m :: ∃!≝ a. a -> a
 
   instance Num a => D [a] where
-    m :: ∃≝ a. [a] -> [a]
+    m :: ∃!≝ a. [a] -> [a]
     m x = map (*2) x
 
 Modifiers
