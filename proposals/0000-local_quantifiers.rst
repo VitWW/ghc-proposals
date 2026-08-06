@@ -413,16 +413,16 @@ UnicodeSyntax
 We wish to preserve ``∃`` (There Exists, U+2203) symbol for universal existential quantifier, 
 so it is proposed to add 3 symbols (``∃!`` + ``<something>``) to represent local quantifiers.
 
-1. ``∃!@`` could represent ``forterm`` quantifier (There Exists, U+2203) + (Commercial At, U+0040).
+1. ``∃!@`` could represent ``forterm`` quantifier (There Exists, U+2203) + (Exclamation Mark, U+0021) + (Commercial At, U+0040).
    
    Maybe for not confusing with "at"-symbol it is better to allow (Fullwidth Commercial At, U+FF20) - ``∃!＠``
 
-2. ``∃!≡`` could represent ``fortype`` quantifier (There Exists, U+2203) + (Identical To, U+2261).
+2. ``∃!≡`` could represent ``fortype`` quantifier (There Exists, U+2203) + (Exclamation Mark, U+0021) + (Identical To, U+2261).
 
-3. ``∃!≝`` could represent ``forargm`` quantifier (There Exists, U+2203) + (Equal to By Definition, U+2254).
+3. ``∃!≝`` could represent ``forargm`` quantifier (There Exists, U+2203) + (Exclamation Mark, U+0021) + (Equal to By Definition, U+2254).
 
 
-Also it affects modifiers - ``%∃!＠``, ``%∃!≡`` and ``%∃!≝``.
+Maybe also it affects modifiers - ``%∃!＠``, ``%∃!≡`` and ``%∃!≝``.
 
 Examples
 ::
@@ -446,7 +446,8 @@ Examples
 Modifiers
 ~~~~~~~~~
 
-We allow to write modifiers near type variable at forall-qualifier.
+We allow to write ``%forargm``, ``%forterm`` and ``%fortype`` (and ``%foreach``) as modifiers 
+for ``forall`` type variable declarations near (before) type variable.
 
 ScopedTypeVariables
 ~~~~~~~~~~~~~~~~~~~
@@ -461,7 +462,11 @@ ScopedTypeAbstractions
 ``TypeAbstractions`` extension ignores local quantified variables.
 
 But it has build lexical scoping searching rules for unquantified type variables, 
-which it is better to segregate later into the new ``ScopedTypeAbstractions`` extension.
+which it is better to segregate later into new ``JustTypeAbstractions`` and ``ScopeForTypeAbstractions`` extension.
+
+.. code:: none
+
+    TypeAbstraction = JustTypeAbstractions + ScopeForTypeAbstractions
 
 Visible ForAll and ForEach
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
