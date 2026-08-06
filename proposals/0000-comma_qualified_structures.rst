@@ -1,4 +1,4 @@
-Data Tuples
+Comma Tuples
 ============
 
 .. author:: Viktor WW
@@ -14,7 +14,7 @@ This proposal suggests extending the Haskell syntax by adding alternative syntax
 for tuple-like structures with build support of trailing and leading commas.
 
 This change aims to improve code readability and maintainability by allowing more flexibility 
-in formatting boxed and unboxed tuples, constraint tuples and class context. 
+in formatting boxed and unboxed tuples, constraint tuples and class context simplified and not. 
 
 First of all, particularly important in scenarios involving version control, code reviews, and automated code generation.
 
@@ -77,18 +77,23 @@ that has built support for trailing and leading commas and are not affected by `
 
 This proposal introduces the following syntactical changes to Haskell:
 
-1. Add language extension ``DataTuples``
+1. Add language extension ``CommaTuples``
 
-2. Add language extension ``ExtraCommas`` which is just unification of 2 extensions: ``ExtraCommas = DataTuples + ExtraNonTupleCommas``
+2. Add language extension ``ExtraCommas`` which is just unification of 2 extensions: ``ExtraCommas = CommaTuples + ExtraNonTupleCommas``
 
-3. **Comma Qualified tuples**: Allow to write ``data`` keyword after tuple close bracket `)` in tuples, 
+3. **Comma qualified tuples**: Allow to write ``data`` keyword after tuple close bracket `)` in tuples, 
    unboxed-tuples, constraint tuples and class context at terms and types.
 
-   The only difference between ``data``-qualified and ordinary tuples is:
-
-   - ordinary tuples don't allow extra commas, but allow tupling constructors and ``TupletSections`` (if values are not Constraint kind)
+   Comma qualified tuples by meaning are indistinguishable from ordinary tuples, but they are different in syntax.
    
-   - ``data``-qualified tuples allow extra commas, but ignore ``TupletSections``
+   Tuple ``(a, b, c)`` is the same as ``(, a, b, c,) data`` in types or class context;
+   and ``(x, y, z)`` is the same as ``(, x, y, z,) data`` in terms. 
+
+   The only difference between comma-qualified and ordinary tuples is:
+
+   - ordinary tuples don't allow extra commas, but allow curried tupling constructors and ``TupletSections`` (if values are not Constraint kind)
+   
+   - comma-qualified tuples allow extra commas, but ignore ``TupletSections``
    
      - Allow a comma before the first element after opening bracket ``(`` or ``(#``
 	
@@ -116,7 +121,7 @@ This proposal introduces the following syntactical changes to Haskell:
 Syntax
 ~~~~~~~~~~~~
 	  
-The formal grammar changes for ``DataTuples``:
+The formal grammar changes for ``CommaTuples``:
 
 Syntax for tuples, unboxed tuples, constraint tuples:
 
@@ -174,7 +179,7 @@ Syntax for class content and class simplified content:
     simpletype  := tycon tyvar1 … tyvark                         (k ≥ 0)
 
 
-These changes allow extra commas in the all tuple-like structures:
+These changes allow extra commas in the all comma-tuple-like structures:
 
 - tuples
 - unboxed tuples
@@ -183,6 +188,22 @@ These changes allow extra commas in the all tuple-like structures:
 - class simplified content
 
 This proposal does not cover multi-tupling constructors for obvious reasons.
+
+
+Proposed Library Change Specification
+-------------------------------------
+
+The core library ``base`` must be changed.
+
+First of all must be updated ``Read a`` instances 
+for supporting reading comma qualified tuples.
+
+Second, we update ``Data.Tuple`` to:
+::
+
+    data Solo a = (a) data
+	
+    pattern MkSolo a = (a) data
 
 
 Examples
@@ -203,7 +224,7 @@ Examples
 
 
       
-2. Mix of data-tuples
+2. Mix of comma-tuples and ordinary tuples
 
    Unboxed tupleles, class context ::
 
@@ -230,7 +251,7 @@ Examples
 Effect and Interactions
 -----------------------
 
-We choose the **postfix variant** ``(x,y,z) data`` over **prefix variant** ``data [x,y,z]`` to avoid injections 
+We choose the **postfix variant** ``(x,y,z) data`` over **prefix variant** ``data (x,y,z)`` to avoid injections 
 for ``BangPatterns``, ``AsPattern``, ``StrictPattern``,  ``Irrefutable Patterns``, data declaration ::
 
     -- Bang Patterns
@@ -243,24 +264,24 @@ for ``BangPatterns``, ``AsPattern``, ``StrictPattern``,  ``Irrefutable Patterns`
     foo1 t@(,p,q,) data = t
    
     -- StrictPattern
-    data T = MkT ~(Int, Int, Int,) data
+    data T = MkT ~(,Int, Int, Int,) data
     
     -- Irrefutable Patterns
     let ~(a,b,) data = expr in e0 a b
 
     -- Data declaration	vs function declaration
-	(a1, b1) data `op` (a2, b2) data = expr
+	(a1, b1,) data `op` (a2, b2,) data = expr
 
 Tuple Section
 ~~~~~~~~~~~~~~~~~~
 
-``TupleSection`` extension do not interact with alternative syntax of data tuples.
+``TupleSection`` extension do not interact with alternative syntax of comma-tuples.
 
 
 Costs and Drawbacks
 -------------------
 
-We expect the implementation and maintenance costs of ``DataTuples`` has medium difficulty.
+We expect the implementation and maintenance costs of ``CommaTuples`` has medium difficulty.
 
 
 Backward Compatibility
@@ -304,9 +325,9 @@ Or alternative keywords could be chosen insted of ``data``, like ``qualified``.
 Alternative Rule for Commas
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This proposal has synchronized rules with 748 Proposal:
+This proposal has synchronized rules with ``ExtraNonTupleCommas`` extension:
 
-  We allow Leading Comma AND Trailing Comma (in single Structure) but WITHOUT Repetitive Commas.
+  We allow Leading Comma AND Trailing Comma (in single Structure) but WITHOUT Adjacent Commas.
 
 Alternative to this are different rules, which are different from described one.
 
