@@ -13,8 +13,6 @@ Output Existentials
 
 This proposal introduces output existentials into GHC
 
-.. _`#473`: https://github.com/ghc-proposals/ghc-proposals/pull/473
-
 Motivation
 ----------
 
@@ -264,7 +262,7 @@ This proposal is backward compatible.
 Alternatives
 ------------
 
-Main alternative is "First-class existential types" `#473`_ 
+Main alternative is `First-class existential types <https://github.com/ghc-proposals/ghc-proposals/pull/473>`__ proposal
 
 Alternative names
 ~~~~~~~~~~~~~~~~~
@@ -289,7 +287,9 @@ It is unclear. The author cannot implement this proposal.
 Acknowledgments
 ---------------
 
-This proposal is highly inspired by "First-class existential types" `#473`_ author Richard Eisenberg.
+This proposal is highly inspired by "First-class existential types"  
+`#473 <https://github.com/ghc-proposals/ghc-proposals/pull/473>`__
+author Richard Eisenberg.
 
 Endorsements
 ------------
