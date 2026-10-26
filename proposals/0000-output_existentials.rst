@@ -45,7 +45,7 @@ This proposal propose similar feature: using construction ``therefore in`` as "o
 
 Exists 3 kinds of Output Existentials, and this proposal covers all 3 cases:
 
-- **Rigid Existentials**: special type which is known how to monotyped during a compile time
+- **Quasi Existentials**: special type which is known how to monotyped during a compile time
   and it is known during a compile time
 
   ::
@@ -53,7 +53,7 @@ Exists 3 kinds of Output Existentials, and this proposal covers all 3 cases:
     anytyped :: exists a. a
     anytyped = therefore @String in "Some small text"
 	
-  Rigid Existentials could be simplified to Ordinary types during a compile time.
+  Quasi Existentials could be simplified to Ordinary types during a compile time.
   
 - **Extractable Existentials**: special type which is could be checked during a compile time and 
   is known how to monotyped during a compile time but it is known during a runtime
@@ -189,7 +189,43 @@ We add one type to Types:
        | ∃ n. Type     ;-- NEW!
        | ……
 
-Existential type has same rules as Forall type.
+Existential type has mostly same rules as Forall type.
+
+Main difference:
+
+Polymorphic Forall type is eliminated to Monomorphic type by substitution rule / judgment TmAppType during TypeCheck:
+
+.. code:: none
+
+    Γ ⊢ expr : ∀ (a :: k). ty
+    Γ ⊢ (a :: k) ↦ sgm  OK
+    ---------------------------------------------    TmAppType
+    Γ, TypeCheck ⊢ expr sgm : ty [(a :: k) ↦ sgm]
+
+But Polymorphic Existential type **remains** polymorhpic during TypeCheck!
+
+And we have a Promise, that we could substitute a type to Monomorphic type during RunTume!
+
+.. code:: none
+
+    Γ ⊢ expr : ∃ (a :: k). ty
+    --------------------------------------    TmRuntimePromise
+    Γ, RunTime ⊢ sgm <= (a :: k) ↦ sgm  OK
+
+    Γ ⊢ expr : ∃ (a :: k). ty
+    Γ, RunTime ⊢ sgm <= (a :: k) ↦ sgm  OK
+    ---------------------------------------    TmExistSubst
+    Γ, RunTime ⊢ expr : ty [(a :: k) ↦ sgm]
+
+
+We have a Promise to be guaranteed because of rule / judgment ThfPromise of ``therefore`` construction:
+
+.. code:: none
+
+    Γ ⊢ therefore @(tyv :: k) in expr : ty
+    --------------------------------------    ThfPromise
+    Γ, TypeCheck ⊢ expr : ∃ (a :: k). ty
+    Γ, RunTime   ⊢ a ↤ tyv
 
 
 Examples
@@ -234,6 +270,18 @@ Constraints-existentials data ::
 
   fromDocE :: DocE -> exists a. Show a => a
   fromDocE (MkDoc @a x) = therefore @a in x
+
+Extractable Existentials from Existentials
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We could extract existentials not only from hidden ``forall`` quantified types::
+
+  mk :: Bool -> exists a. (a, a -> Int)
+  mk True  = therefore @Int  in (5, id)
+  mk False = therefore @Bool in (False, \ b -> if b then 1 else 0)
+
+  fromMk :: exists a. a
+  fromMk = fst $ mk True
 
 
 Effect and Interactions
