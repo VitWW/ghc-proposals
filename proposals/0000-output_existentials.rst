@@ -174,6 +174,9 @@ If exist at least one type pair in column such that ``(tpi :: kpi) /~ (tmi :: km
 but every kind  in column ``kpi ~ kmi`` is equal, the we change 
 ordinary ``i``-column type to existential variable.
 
+Sure, if ``case`` requires ``j`` amount of existential variables,
+then each LHS part of each branch must consist ``therefore`` construction
+with exactly ``j`` amount of types.
 
 Core Language
 ~~~~~~~~~~~~~
