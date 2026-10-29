@@ -43,7 +43,9 @@ is using "input types" for ``forall`` quantifier.
 
 This proposal propose similar feature: using construction ``therefore in`` as "output types" for ``exists`` quantifier.
 
-Exists 3 kinds of Output Existentials, and this proposal covers all 3 cases:
+Output Existentials do not cover all variety of possible Existentials types, 
+but they represents a significant part of them.
+Exists 4 kinds of Output Existentials, and this proposal covers all 4 cases:
 
 - **Quasi Existentials**: special type which is known how to monotyped during a compile time
   and it is known during a compile time
@@ -85,6 +87,18 @@ Exists 3 kinds of Output Existentials, and this proposal covers all 3 cases:
     deserialise "bool" = therefore @Bool in MkBool
 	
   Branched Existentials allow to get rid of most of dynamic types.
+
+- **Transit Existentials**: We could use existential typed values as
+  argumnts to functions with forall types argumnts. So we could have 
+  a return type to be existential even if a body does not 
+  consist ``therefore`` construction.
+
+  ::
+  
+    someT :: exists a. T a
+    someT = id $ deserialise "bool"
+	
+  Transit Existentials are indirect existential.
 
 
 Proposed Change Specification
