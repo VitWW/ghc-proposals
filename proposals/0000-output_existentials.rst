@@ -32,7 +32,8 @@ Unfortunately we cannot unbox it inner type. ::
     fromBox (MkBox x)  = x
 
 One of the great architectural achievements of Haskell language 
-is using "input types" for ``forall`` quantifier.
+is using "input types" for ``forall`` quantifier 
+(it appears in LHS part of equation only)
 ::
 
     idS :: String -> String
@@ -41,7 +42,8 @@ is using "input types" for ``forall`` quantifier.
     idA :: forall a. a -> a
 	idA @a x = x
 
-This proposal propose similar feature: using construction ``therefore in`` as "output types" for ``exists`` quantifier.
+This proposal propose similar feature: using expression construction ``therefore in`` 
+after some evaluation in RHS part of equation as "output types" for ``exists`` quantifier.
 
 Output Existentials do not cover all variety of possible Existentials types, 
 but they represents a significant part of them.
@@ -98,7 +100,7 @@ Exists 4 kinds of Output Existentials, and this proposal covers all 4 cases:
     someT :: exists a. T a
     someT = id $ deserialise "bool"
 	
-  Transit Existentials are indirect existential.
+  Transit Existentials are indirect existentials.
 
 
 Proposed Change Specification
