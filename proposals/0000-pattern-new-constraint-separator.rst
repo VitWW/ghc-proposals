@@ -79,8 +79,8 @@ We should be able to have any of the following both in the Reqested and the Prov
 
 Second, we make operator ``|-`` as keyword in signatures.
 
-Third, we allow to use old requested separator ``=>``, but with Warning 
-when ``CurriedContext`` (or similar) extension in not active.
+Third, we allow to use old requested separator ``=>`` as Deprecated one with a Warning 
+till ``CurriedContext`` (or similar) extension in not developed and is not active.
 
 
 Syntax
